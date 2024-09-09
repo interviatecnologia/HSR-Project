@@ -1,8 +1,8 @@
 # HSR-Project
 HSR Project
 
-Este documento descreve as funções de uma API (Programação de Aplicativos).
-Interface).
+Este documento descreve as funções de API (Programação de Aplicativos Interface).
+O documento tem a finalidade de registrar e explicar com detahes o funcionamento e aplicacação.
 
 Esta dividida em 2 grupos: Non-Agent API e Agent API
 
