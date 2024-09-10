@@ -1,0 +1,10 @@
+VARIAVEIS:
+
+source=[server_name]        "O parâmetro "source" é usado para especificar a origem ou o contexto da solicitação API. Em outras palavras, ele indica de onde a solicitação está vindo ou qual é o sistema ou aplicação que está fazendo a solicitação.""
+user=[user]                 "O parâmetro "user" é usado para especificar usuario com permisssão para conexão da aplicação"
+pass=[pass]                 "O parâmetro "pass" é usado para especificar senha do usuario com permisssão para conexão da aplicação"
+phone_number=[phone_number] "O parâmetro "phone_number" é usado para especificar o telefone de destino desejado para discagem"
+phone_code=[phone_code]     "O parâmetro "phone_code" é usado para especificar o o codigo do Pais do telefone de destino desejado para discagem"
+campaign_id=[campaign_id]   "O parâmetro "campaign_id" é usado para especificar o código da campanha "
+list_id=[list_id]           "O parâmetro "list_id" é usado para especificar o código de Lista da campanha "
+callback_user=[callback_user] "O parâmetro "callback_user" é usado para especificar o código do usuario de callback "
