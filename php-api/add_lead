@@ -1,0 +1,26 @@
+<?php
+if(isset($_POST['phone'])&& $_POST['phone']!="){
+    $url = 'https://[server]/vicidial/non_agent_api.php';
+    $query_fields = [
+        'source' => 'SourceName',
+        'user' => 'apiuserid',
+        'pass' => 'apipass',
+        'function' =>  'add_lead',
+        'list_id' => '1111',
+        'add_to_hopper' => '99',
+        'phone_code' => '55',
+        'phone_number' => $_POST[phone],
+        'first_name' => $_POST[fname],
+        'last_name' => $_POST[lname],
+        'email' => $_POST[email],
+
+        
+
+];
+
+$curl =curl_init($url.'?'.http_build_query($query_field));
+$response = json_decod(curl_exec($curl),true);
+curl_close($curl);
+header("Location:https://[server]/application-received/");
+}
+?>
