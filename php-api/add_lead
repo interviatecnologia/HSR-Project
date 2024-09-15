@@ -2,11 +2,11 @@
 if(isset($_POST['phone'])&& $_POST['phone']!="){
     $url = 'https://[server]/vicidial/non_agent_api.php';
     $query_fields = [
-        'source' => 'SourceName',
-        'user' => 'apiuserid',
-        'pass' => 'apipass',
+        'source' => 'source',
+        'user' => 'user',
+        'pass' => 'pass',
         'function' =>  'add_lead',
-        'list_id' => '1111',
+        'list_id' => 'list_id',
         'add_to_hopper' => '99',
         'phone_code' => '55',
         'phone_number' => $_POST[phone],
