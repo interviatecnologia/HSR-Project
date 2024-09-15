@@ -46,13 +46,13 @@ in_groups - lista delimitada por barras verticais de grupos de entrada a serem s
 
 NOTA: Esta função pode não funcionar com a integração Vtiger
 
-VARIAVEIS: (CONSULTE ARQUIVO VARIAVEIS E CÓDIGOS)
-
 server=[server]                         "string" 
 source=[source]        	                "string"
 user=[user]                 	        "string"
 pass=[pass]                 	        "string"
-function=[function]                     "string"    
+function=[function]                     "string"  
+
+VARIAVEIS ADICIONAIS: (CONSULTE ARQUIVO VARIAVEIS CONFORME FUNÇÃO E CÓDIGOS DESEJADOS)
 
 
 Exemplo de sequências de URL para chamadas de API:
