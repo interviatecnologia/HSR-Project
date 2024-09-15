@@ -140,31 +140,33 @@ if ( (strlen($query_string) > 0) and (strlen($POST_URI) > 2) )
 ###################################################ALTERAÇÃO JSON#########################################################
 
 //Antes
-$source = $_GET['source'];  
-$user = $_GET['user'];  
-$pass = $_GET['pass'];  
-$function = $_GET['function'];  
+$source = $_GET['source'];
+$user = $_GET['user'];
+$pass = $_GET['pass'];
+$function = $_GET['function'];
 $agent_user = $_GET['agent_user'];
 $agent_pass = $_GET['agent_pass'];
 $campaign_id = $GET['campaign_id'];
 $dial_prefix = $GET['dial_prefix'];
 $first_name = $GET['first_name'];
 $focus = $GET['focus'];
-$last_name = $GET['last_name']; 
+$last_name = $GET['last_name'];
 $list_id = $GET['list_id'];
 $phone_number = $GET['phone_number'];
 $phone_code = $GET['phone_code'];
 $preview = $GET['preview'];
 $search = $GET['search'];
-  
-   
-  
-// Depois  
-$json = json_decode(file_get_contents('php://input'), true);  
-$source = $json['source'];  
-$user = $json['user'];  
-$pass = $json['pass'];  
-$function = $json['function'];  
+$value = $GET['phone_number'];
+
+
+
+
+// Depois
+$json = json_decode(file_get_contents('php://input'), true);
+$source = $json['source'];
+$user = $json['user'];
+$pass = $json['pass'];
+$function = $json['function'];
 $agent_user = $json['agent_user'];
 $agent_pass = $json['agent_pass'];
 $campaign_id = $json['campaign_id'];
@@ -177,15 +179,15 @@ $phone_number = $json['phone_number'];
 $phone_code = $json['phone_code'];
 $preview = $preview['phone_code'];
 $search = $json['search'];
+$value = $json['phone_number'];
 
 
-if ($response !== null) {  
-    header('Content-Type: application/json');  
-    echo json_encode($response);  
- } else {  
-    // Retorne um erro ou uma mensagem de erro  
+if ($response !== null) {
+    header('Content-Type: application/json');
+    echo json_encode($response);
+ } else {
+    // Retorne um erro ou uma mensagem de erro
  }
-
 
 
 #######################################################FIM####################################################################
