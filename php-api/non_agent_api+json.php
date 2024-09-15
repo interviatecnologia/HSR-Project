@@ -217,20 +217,22 @@ require("functions.php");
 
 ###################################################ALTERAÇÃO JSON#########################################################
 
+//Antes
 $source = $_GET['source'];  
 $user = $_GET['user'];  
 $pass = $_GET['pass'];  
 $function = $_GET['function'];  
 $agent_user = $_GET['agent_user'];
 $agent_pass = $_GET['agent_pass'];
-$campaign_id = $GET['campaign_id']; 
+$campaign_id = $GET['campaign_id'];
+$dial_prefix = $GET['dial_prefix'];
+$first_name = $GET['first_name'];
+$last_name = $GET['last_name']; 
 $list_id = $GET['list_id'];
-$value = $GET['value'];
 $phone_number = $GET['phone_number'];
 $phone_code = $GET['phone_code'];
-$first_name = $GET['first_name'];
-$last_name = $GET['last_name'];  
-   
+$value = $GET['value'];
+
   
 // Depois  
 $json = json_decode(file_get_contents('php://input'), true);  
@@ -241,12 +243,13 @@ $function = $json['function'];
 $agent_user = $json['agent_user'];
 $agent_pass = $json['agent_pass'];
 $campaign_id = $json['campaign_id'];
-$list_id = $json['list_id'];
-$value = $json['value'];
-$phone_number = $json['phone_number'];
-$phone_code = $json['phone_code'];
+$dial_prefix = $json['dial_prefix'];
 $first_name = $json['first_name'];
 $last_name = $json['last_name'];
+$list_id = $json['list_id'];
+$phone_number = $json['phone_number'];
+$phone_code = $json['phone_code'];
+$value = $json['value'];
 
 
 
