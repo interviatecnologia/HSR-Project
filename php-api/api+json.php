@@ -140,23 +140,23 @@ if ( (strlen($query_string) > 0) and (strlen($POST_URI) > 2) )
 ###################################################ALTERAÇÃO JSON#########################################################
 
 //Antes
-$source = $_GET['source'];
-$user = $_GET['user'];
-$pass = $_GET['pass'];
-$function = $_GET['function'];
-$agent_user = $_GET['agent_user'];
-$agent_pass = $_GET['agent_pass'];
-$campaign_id = $GET['campaign_id'];
-$dial_prefix = $GET['dial_prefix'];
-$first_name = $GET['first_name'];
-$focus = $GET['focus'];
-$last_name = $GET['last_name'];
-$list_id = $GET['list_id'];
-$phone_number = $GET['phone_number'];
-$phone_code = $GET['phone_code'];
-$preview = $GET['preview'];
-$search = $GET['search'];
-$value = $GET['phone_number'];
+$source = $_POST['source'];
+$user = $_POST['user'];
+$pass = $_POST['pass'];
+$function = $_POST['function'];
+$agent_user = $_POST['agent_user'];
+$agent_pass = $_POST['agent_pass'];
+$campaign_id = $_POST['campaign_id'];
+$dial_prefix = $_POST['dial_prefix'];
+$first_name = $_POST['first_name'];
+$focus = $_POST['focus'];
+$last_name = $_POST['last_name'];
+$list_id = $_POST['list_id'];
+$phone_number = $_POST['phone_number'];
+$phone_code = $_POST['phone_code'];
+$preview = $_POST['preview'];
+$search = $_POST['search'];
+$value = $_POST['value'];
 
 
 
@@ -177,9 +177,9 @@ $last_name = $json['last_name'];
 $list_id = $json['list_id'];
 $phone_number = $json['phone_number'];
 $phone_code = $json['phone_code'];
-$preview = $preview['phone_code'];
+$preview = $json['preview'];
 $search = $json['search'];
-$value = $json['phone_number'];
+$value = $json['value'];
 
 
 if ($response !== null) {

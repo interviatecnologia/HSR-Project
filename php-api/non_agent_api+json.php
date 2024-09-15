@@ -224,17 +224,17 @@ $pass = $_GET['pass'];
 $function = $_GET['function'];
 $agent_user = $_GET['agent_user'];
 $agent_pass = $_GET['agent_pass'];
-$campaign_id = $GET['campaign_id'];
-$dial_prefix = $GET['dial_prefix'];
-$first_name = $GET['first_name'];
-$focus = $GET['focus'];
-$last_name = $GET['last_name'];
-$list_id = $GET['list_id'];
-$phone_number = $GET['phone_number'];
-$phone_code = $GET['phone_code'];
-$preview = $GET['preview'];
-$search = $GET['search'];
-$value = $GET['phone_number'];
+$campaign_id = $_GET['campaign_id'];
+$dial_prefix = $_GET['dial_prefix'];
+$first_name = $_GET['first_name'];
+$focus = $_GET['focus'];
+$last_name = $_GET['last_name'];
+$list_id = $_GET['list_id'];
+$phone_number = $_GET['phone_number'];
+$phone_code = $_GET['phone_code'];
+$preview = $_GET['preview'];
+$search = $_GET['search'];
+$value = $_GET['value'];
 
 
 
@@ -255,9 +255,9 @@ $last_name = $json['last_name'];
 $list_id = $json['list_id'];
 $phone_number = $json['phone_number'];
 $phone_code = $json['phone_code'];
-$preview = $preview['phone_code'];
+$preview = $json['preview'];
 $search = $json['search'];
-$value = $json['phone_number'];
+$value = $json['value'];
 
 
 if ($response !== null) {
