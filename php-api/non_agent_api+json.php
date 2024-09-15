@@ -217,24 +217,27 @@ require("functions.php");
 
 ###################################################ALTERAÇÃO JSON#########################################################
 
-$json_data = file_get_contents('php://input');   
-$data = json_decode($json_data, true);   
-   
-$allowed_variables = array('source', 'user', 'pass', 'agent_user', 'agent_pass', 'value', 'list_id', 'first_name','last_name', 'phone_number','phone_code','search','preview','dnc_check','focus');   
-   
-$response = array();   
-   
-foreach ($allowed_variables as $var) {   
-  if (isset($data[$var])) {   
-    $response[$var] = $data[$var];   
-  }   
-}   
-   
-$function = $data['function']; // Adicionei essa linha para definir a variável $function  
-$response['function'] = $function;   
-   
-header('Content-Type: application/json');   
-echo json_encode($response);
+$source = $_GET['source'];  
+$user = $_GET['user'];  
+$pass = $_GET['pass'];  
+$function = $_GET['function'];  
+$agent_user = $_GET['agent_user'];  
+  
+// Depois  
+$json = json_decode(file_get_contents('php://input'), true);  
+$source = $json['source'];  
+$user = $json['user'];  
+$pass = $json['pass'];  
+$function = $json['function'];  
+$agent_user = $json['agent_user'];   
+
+
+if ($response !== null) {  
+    header('Content-Type: application/json');  
+    echo json_encode($response);  
+ } else {  
+    // Retorne um erro ou uma mensagem de erro  
+ }
 
 
 
