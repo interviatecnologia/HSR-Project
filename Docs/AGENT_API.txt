@@ -1,0 +1,1159 @@
+DOCUMENTO DA API DO AGENTE Iniciado: 2008-07-03 Atualizado: 2024-06-24
+
+Este documento descreve as funções de uma API (Application Programming Interface)
+para a tela do Agente VICIDIAL. Esta funcionalidade será bastante limitada no início
+e será desenvolvido à medida que funções críticas forem identificadas e programadas nele.
+
+Há também um novo script de API NÃO-agente, para mais informações sobre isso, por favor
+leia o documento NON-AGENT_API.txt.
+
+OBSERVAÇÃO: A API pode usar HTTPS se o seu servidor web estiver configurado para usar HTTPS.
+	Por exemplo, todas as contas VICIhost podem usar HTTPS para funções de API
+
+
+Funções da API:
+versão - mostra a versão e a compilação da API, juntamente com a data/hora
+external_hangup - envia comando para desligar a chamada telefônica atual para um agente específico (Desligar Cliente)
+external_status - envia comando para definir a disposição de um agente específico e passar para a próxima chamada
+external_pause - envia comando para pausar/retomar um agente agora se ele não estiver em uma chamada, ou pausar após a próxima chamada se ele estiver em uma chamada
+external_dial - envia comando para discar manualmente um número na tela do agente
+preview_dial_action - envia SKIP, DIALONLY, ALTDIAL, ADR3DIAL ou FINISH quando um lead está sendo visualizado ou discagem alt manual
+external_add_lead - Adiciona um lead na lista de discagem manual da campanha para o agente conectado
+change_ingroups - altera os grupos selecionados para um agente conectado
+update_fields - altera valores para campos de dados selecionados na interface do agente
+set_timer_action - define a ação do timer para a chamada atual em que o agente está
+st_login_log - procura o campo vicidial_users.custom_three e registra o evento do CRM
+st_get_agent_active_lead - procura informações de leads ativos para um agente e exibe informações de leads
+ra_call_control - controle de chamadas de agentes remotos: chamadas de desligamento/transferência sendo tratadas por agentes remotos
+send_dtmf - envia string de sinal dtmf para a sessão do agente
+transfer_conference - envia vários comandos relacionados ao quadro transfer-conf do agente
+park_call - envia comando para estacionar o cliente ou pega o cliente do parque ou ivr
+logout - desconecta o agente da interface do agente
+gravação - envia um sinal de início/parada de gravação ou status de gravação do agente
+webserver - exibe informações do servidor web, muito útil para configurações de balanceamento de carga
+webphone_url - exibe a URL do webphone para a sessão do agente atual
+call_agent - envie uma chamada para conectar o agente à sua sessão
+pause_code - define um código de pausa se o agente estiver em pausa
+audio_playback - reprodução/pausa/retomada/parada/reinício de áudio básico na sessão do agente
+switch_lead - para chamadas de entrada, alterna lead_id da chamada de entrada ao vivo na tela do agente
+calls_in_queue_count - exibe uma contagem das chamadas aguardando na fila para o agente específico
+force_fronter_leave_3way - enviará um comando ao agente fronter para deixar a chamada 3way em que o agente em execução está
+force_fronter_audio_stop - enviará um comando para a sessão do agente fronter para interromper qualquer reprodução de áudio reproduzida nela
+send_notification - enviará alertas de texto e/ou efeitos de confete para a interface do agente
+vm_message - define uma mensagem de correio de voz personalizada para ser reproduzida quando o agente clica no botão VM na tela do agente
+refresh_panel - atualiza um dos painéis no script do agente: script, script2, callbacks, etc...
+
+
+Novos scripts:
+/agc/api.php - o script que é acessado para executar comandos
+
+
+
+Variáveis ​​necessárias para todas as chamadas de API:
+# usuário - é o usuário da API
+# pass - é a senha do usuário da API
+# agent_user - é o usuário do agente vicidial cuja sessão você deseja afetar
+# source - descrição do que originou a chamada da API (máximo de 20 caracteres)
+
+Variável opcional para todas as chamadas de API:
+# close_window_link - exibirá um link para fechar a janela, útil se você abrir o link da API em uma janela do navegador
+# idioma - atualmente só funciona para fechar janela link: en=Inglês, es=Espanhol
+
+
+
+Para desligar a chamada, descartá-la e então pausar o agente, faça o seguinte na ordem:
+http://server/agc/api.php?source=test&user=6666&pass=1234&agent_user=1000&function=external_pause&value=PAUSE
+http://server/agc/api.php?source=test&user=6666&pass=1234&agent_user=1000&function=external_hangup&value=1
+http://server/agc/api.php?source=test&user=6666&pass=1234&agent_user=1000&function=external_status&value=A
+
+
+
+A resposta às chamadas retornará um ERRO ou um SUCESSO, juntamente com uma explicação.
+por exemplo:
+SUCESSO: conjunto de funções external_status - 6666|A
+ERRO: agent_user não está logado - 6666
+ERRO: O USUÁRIO auth NÃO TEM PERMISSÃO PARA USAR ESTA FUNÇÃO - 6666|webserver|ADMIN
+
+
+
+DETALHE DE CADA FUNÇÃO:
+
+
+
+-------------------------------------------------- ------------------------------
+versão -
+
+DESCRIÇÃO:
+mostra a versão e a compilação da API, juntamente com a data/hora
+
+VALORES: NENHUM
+
+URL DE EXEMPLO:
+http://server/agc/api.php?function=versão
+
+RESPOSTAS:
+VERSÃO: 2.0.5-2|BUILD: 90116-1229|DATA: 2009-01-15 14:59:33|ÉPOCA: 1222020803
+
+
+
+-------------------------------------------------- ------------------------------
+servidor web -
+
+DESCRIÇÃO:
+mostra a versão e a compilação da API, juntamente com a data/hora
+
+VALORES: NENHUM
+
+URL DE EXEMPLO:
+http://server/agc/api.php?source=test&user=6666&pass=1234&function=webserver
+
+RESPOSTAS:
+Dados do servidor web:
+set.timezone: América/Nova_Iorque
+abr.fuso horário: EDT
+fuso horário de verão: 1
+uname: Linux dev-db 2.6.34.8-0.2-default #1 SMP 2011-04-06 18:11:26 +0200 x86_64
+nome do host: dev-db
+nome do servidor: www.vicidial.org
+versão php: 5.3.3
+versão do apache: Apache/2.2.15 (Linux/SUSE)
+processos apache: 13
+carga média do sistema: 0,06
+espaço_livre_em_disco: 444174315520
+data.fuso_horário: America/New_York
+tempo_máximo_de_execução: 360
+tempo_máx_de_entrada: 360
+limite_de_memória: 128M
+tamanho_máximo_do_post: 48M
+upload_max_filesize: 42M
+tempo limite do soquete padrão: 360
+
+
+
+
+-------------------------------------------------- ------------------------------
+external_hangup -
+
+DESCRIÇÃO:
+Desliga a chamada atual do cliente na tela do agente
+
+VALORES: (valor)
+1 - o único valor válido para esta função
+
+URL DE EXEMPLO:
+http://server/agc/api.php?source=test&user=6666&pass=1234&agent_user=1000&function=external_hangup&value=1
+
+RESPOSTAS:
+ERRO: external_hangup não é válido - 1|6666
+ERRO: nenhum usuário encontrado - 6666
+ERRO: agent_user não está logado - 6666
+SUCESSO: função external_hangup definida - 1|6666
+
+
+
+-------------------------------------------------- ------------------------------
+status_externo -
+
+DESCRIÇÃO:
+Define o status da chamada atual do cliente na tela de disposição do agente
+
+VALORES: (valor)
+valor -
+ Qualquer status válido no sistema VICIDIAL funcionará para esta função
+data e hora de retorno de chamada -
+ YYYY-MM-DD+HH:MM:SS, data e hora do retorno de chamada agendado. OBRIGATÓRIO se o retorno de chamada estiver definido e o status for sinalizado como um retorno de chamada agendado
+tipo_de_retorno_de_chamada -	
+ USERONLY ou ANYONE, o padrão é ANYONE
+comentários de retorno de chamada -
+ Comentários opcionais para aparecer quando o retorno de chamada for chamado de volta, devem ter menos de 200 caracteres de comprimento
+qm_dispo_code -
+ Código de status de chamada de opção usado se QM estiver habilitado
+
+URL DE EXEMPLO:
+http://server/agc/api.php?source=test&user=6666&pass=1234&agent_user=1000&function=external_status&value=A
+http://server/agc/api.php?source=test&user=6666&pass=1234&agent_user=1000&function=external_status&value=CALLBK&callback_datetime=2012-01-25+12:00:00&callback_type=USERONLY&callback_comments=comentários+de+retorno+de+chamada+vá+aqui&qm_dispo_code=1234
+
+RESPOSTAS:
+ERRO: external_status não é válido - A|6666
+ERRO: nenhum usuário encontrado - 6666
+ERRO: agent_user não está logado - 6666
+SUCESSO: conjunto de funções external_status - A|6666
+
+
+
+-------------------------------------------------- ------------------------------
+pausa_externa -
+
+DESCRIÇÃO:
+Pausa ou retoma o agente. Se uma pausa e o agente estiver em uma chamada ao vivo, ele fará uma pausa após a chamada ao vivo ser encerrada
+
+VALORES: (valor)
+PAUSE - Pausa a sessão do agente
+RESUME - Retoma a sessão do agente
+
+EXEMPLOS DE URLS:
+http://server/agc/api.php?source=test&user=6666&pass=1234&agent_user=1000&function=external_pause&value=PAUSE
+http://server/agc/api.php?source=test&user=6666&pass=1234&agent_user=1000&function=external_pause&value=RESUME
+
+RESPOSTAS:
+ERRO: external_pause não é válido - PAUSE|6666
+ERRO: nenhum usuário encontrado - 6666
+ERRO: agent_user não está logado - 6666
+SUCESSO: função external_pause definida - PAUSE|1232020456|6666
+
+
+
+-------------------------------------------------- ------------------------------
+sair -
+
+DESCRIÇÃO:
+Desconecta o agente da interface do agente. Se o agente estiver em uma chamada ao vivo, ele fará logout após a chamada ao vivo ser descartada
+
+VALORES: (valor)
+LOGOUT - Sair da sessão do agente
+
+
+EXEMPLOS DE URLS:
+http://server/agc/api.php?source=test&user=6666&pass=1234&agent_user=1000&function=logout&value=LOGOUT
+
+RESPOSTAS:
+ERRO: logout inválido - PAUSE|6666
+ERRO: nenhum usuário encontrado - 6666
+ERRO: agent_user não está logado - 6666
+SUCESSO: função de logout definida - LOGOUT|1232020456|6666
+
+
+
+-------------------------------------------------- ------------------------------
+discagem_externa -
+
+DESCRIÇÃO:
+Coloca uma chamada telefônica de discagem manual na tela do agente, você pode definir se deseja procurar o lead no banco de dados existente ou não e pode definir o phone_code e o número para discar. Esta ação pausará o agente após sua chamada atual, inserirá as informações para fazer a chamada e discará a chamada na tela do agente.
+
+VALORES:
+valor -
+ Qualquer número de telefone válido (7275551212) ou "MANUALNEXT" para imitar o botão Discar próximo número
+lead_id -
+ Qualquer lead_id válido do sistema (valor ou lead_id são necessários) se ambos forem definidos, lead_id substituirá valor
+código_telefone -
+ Qualquer código de país de telefone válido (1 para EUA/Canadá, 44 para Reino Unido, etc...)
+procurar -
+ SIM - realize uma pesquisa na lista vicidial_list definida pela campanha para este número de telefone e exiba esse lead
+ NÃO - não pesquise, crie um novo registro vicidial_list para a chamada
+pré-visualização -
+ SIM - visualize o lead na tela vicidial sem discar
+ NÃO - não visualize o lead, faça a ligação imediatamente
+foco -
+ SIM - altera o foco da tela para a interface do agente vicidial.php, exibe um alerta na janela do navegador
+ NÃO - não mude o foco
+vendor_id -
+ OPCIONAL, qualquer código de lead de fornecedor válido
+dial_prefix -
+ OPCIONAL, qualquer prefixo de discagem que você deseja adicionar ao início da sequência de discagem para esta chamada
+group_alias -
+ OPCIONAL, o ID de chamada de saída (de um alias de grupo existente) que você deseja usar para esta chamada
+vtiger_callback -
+ OPCIONAL, SIM ou NÃO, pesquisará o número de telefone e o ID da conta Vtiger a partir do ID do evento fornecido
+alt_user -
+ OPCIONAL, em vez de agent_user, isso é para procurar o agent_user usando o campo vicidial_users.custom_three
+alt_dial -
+ OPCIONAL, se estiver usando lead_id, você pode definir este sinalizador para discar o número ALT ou o número ADDR3 ou PESQUISAR um número de telefone dentro do lead
+           se SEARCH for usado e o phone_number não corresponder ao phone_number, alt_phone ou address3 do lead
+	   um ERRO será retornado
+dial_ingroup -
+ OPCIONAL, faça a chamada como uma chamada de saída em grupo
+saída_cid -
+ OPCIONAL, o CallerID a ser enviado para esta chamada de saída. OBSERVAÇÃO: Isso só funcionará se "Outbound Call Any CID" estiver habilitado nas Configurações do Sistema!
+
+
+EXEMPLOS DE URLS:
+http://server/agc/api.php?source=test&user=6666&pass=1234&agent_user=1000&function=external_dial&value=7275551212&phone_code=1&search=YES&preview=NO&focus=YES
+http://server/agc/api.php?source=test&user=6666&pass=1234&agent_user=1000&function=external_dial&value=7275551212&phone_code=1&search=YES&preview=NO&focus=YES&dial_prefix=88&group_alias=DEFAULT
+
+RESPOSTAS:
+AVISO: dial_ingroup definido não encontrado - FAKE_INGROUP
+ERRO: external_dial não é válido - 7275551212|1|SIM|6666
+ERRO: nenhum usuário encontrado - 6666
+ERRO: agent_user não está logado - 6666
+ERRO: agent_user não tem permissão para fazer chamadas de discagem manual - 6666
+ERRO: caller_id_number do group_alias não é válido - 6666|TESTING|123
+ERRO: group_alias não é válido - 6666|TESTING
+ERRO: outbound_cid não é permitido neste sistema - 6666|3125551212|DESATIVADO
+ERRO: a atividade de retorno de chamada do vtiger não existe no sistema vtiger - 12345
+ERRO: phone_number já está na fila de discagem manual deste agente - 6666|7275551211
+ERRO: lead_id não é válido - 6666|1234567
+ERRO: número de telefone inválido - 6666||1234567|
+ERRO: número de telefone lead_id pesquisa não encontrada - 6666|7275551212|1234567|
+SUCESSO: função external_dial definida - 7275551212|6666|1|SIM|NÃO|SIM|123456|1232020456|9|TESTE|7275551211|
+
+
+
+
+
+-------------------------------------------------- ------------------------------
+preview_dial_action -
+
+DESCRIÇÃO:
+envia SKIP, DIALONLY, ALTDIAL, ADR3DIAL ou FINISH quando um lead está sendo visualizado ou em Manual Alt Dial
+
+VALORES:
+agente_usuário -
+ Sequência alfanumérica OBRIGATÓRIA para usuário agente ativo
+
+valor -
+ Uma das seguintes ações (SKIP, DIALONLY, ALTDIAL, ADR3DIAL ou FINISH)
+
+EXEMPLOS DE URLS:
+http://server/agc/api.php?source=test&user=6666&pass=1234&agent_user=1000&function=preview_dial_action&value=SKIP
+
+RESPOSTAS:
+ERRO: preview_dial_action não é válido - 7275551212|1|SIM|6666
+ERRO: nenhum usuário encontrado - 6666
+ERRO: agent_user não está logado - 6666
+ERRO: agent_user não tem permissão para fazer chamadas de discagem manual - 6666
+ERRO: discagem de pré-visualização não permitida nesta campanha - 6666|TESTE|DESATIVADO
+ERRO: pular o mostrador de pré-visualização não é permitido nesta campanha - 6666|TESTING|PREVIEW_ONLY
+ERRO: discagem de número alternativo não permitida nesta campanha - 6666|TESTE|N
+SUCESSO: função preview_dial_action definida - DIALONLY|6666|DIALONLY
+
+
+
+
+
+-------------------------------------------------- ------------------------------
+external_add_lead -
+
+DESCRIÇÃO:
+Adiciona um lead na lista de discagem manual da campanha para o agente logado. Uma função de adicionar lead muito simplificada em comparação com a função Non-Agent API
+
+VALORES:
+agente_usuário -
+ Sequência alfanumérica OBRIGATÓRIA para o usuário do agente
+dnc_check -
+ OPCIONAL - Verifique o número em relação ao DNC do sistema
+campanha_dnc_check -
+ OPCIONAL - Verifique o número em relação à campanha DNC da campanha do agente
+DADOS DO LEAD (deve preencher pelo menos um)
+   NOTA: Somente os campos especificados na chamada da API serão modificados
+	endereço1
+	endereço2
+	endereço3
+	telefone alternativo
+	cidade
+	Comentários
+	código_do_país
+	data_de_nascimento
+	e-mail
+	primeiro nome
+	gênero
+	gmt_offset_agora
+	sobrenome
+	Inicial do nome do meio
+	número de telefone
+	código_telefone
+	código postal
+	província
+	frase_de_segurança
+	id_fonte
+	estado
+	título
+	código_do_vendedor_lead
+	classificação
+	proprietário
+
+EXEMPLOS DE URLS:
+http://server/agc/api.php?source=test&user=6666&pass=1234&agent_user=1000&function=external_add_lead&phone_number=7275551212&phone_code=1&first_name=Bob&last_name=Smith=NÃO&dnc_check=SIM
+
+RESPOSTAS:
+ERRO: external_add_lead não é válido - 7275551212|1|6666|
+ERRO: nenhum usuário encontrado - 6666
+ERRO: falha na inserção do lead - 7275551212|TESTCAMP|101|6666
+ERRO: add_lead NÚMERO DE TELEFONE NO DNC - 7275551212|6666
+ERRO: add_lead NÚMERO DE TELEFONE NA CAMPANHA DNC - 7275551212|TESTCAMP|6666
+ERRO: lista de discagem manual de campanha indefinida - 7275551212|TESTCAMP|6666
+ERRO: agent_user não está logado - 6666
+SUCESSO: lead adicionado - 7275551212|TESTCAMP|101|123456|6666
+
+
+
+
+
+-------------------------------------------------- ------------------------------
+change_ingroups -
+
+DESCRIÇÃO:
+Esta função alterará os in-groups selecionados para um agente que esteja conectado a uma campanha que permita que chamadas de entrada sejam manipuladas. Permite que os in-groups selecionados para um agente sejam alterados enquanto ele estiver conectado à tela do ViciDial Agent somente. Uma vez alterado dessa forma, o agente precisaria efetuar logout e login novamente para poder selecionar in-groups ele mesmo (se Agent Choose In-Groups estiver habilitado para esse usuário). A caixa de seleção mesclada também pode ser alterada usando esta função. O usuário da API que executa esta função deve ter vicidial_users.change_agent_campaign = 1.
+
+VALORES:
+valor -
+ CHANGE - mudará todos os grupos para aqueles definidos em ingroup_choices
+ REMOVER - removerá apenas os grupos listados
+ ADD - adicionará apenas os grupos listados
+misturado -
+ SIM - define o agente para atender chamadas discadas automaticamente de saída (não aplicável em campanhas de método de discagem MANUAL e INBOUND_MAN)
+ NÃO - configure o agente para atender apenas chamadas de entrada
+escolhas_ingroup -
+ OPCIONAL, uma lista delimitada por espaços (use sinais de mais + no URL) de grupos para permitir que o agente receba chamadas, por exemplo: " TEST_IN2 SALESLINE TRAINING_IN -"
+definir_como_padrão -
+ OPCIONAL, SIM ou NÃO - substitui as configurações do agente na tela de modificação do usuário, o padrão é NÃO
+
+EXEMPLOS DE URLS:
+http://server/agc/api.php?source=test&user=6666&pass=1234&agent_user=1000&function=change_ingroups&value=CHANGE&set_as_default=YES&blended=YES&ingroup_choices=+TEST_IN+SALESLINE+FAKE_IN+-
+http://server/agc/api.php?source=test&user=6666&pass=1234&agent_user=1000&function=change_ingroups&value=REMOVER&blended=NÃO&ingroup_choices=+TESTE_EM2+TESTE_EM4+-
+http://server/agc/api.php?source=test&user=6666&pass=1234&agent_user=1000&function=change_ingroups&value=ADD&blended=NO&ingroup_choices=+TEST_IN2+-
+
+RESPOSTAS:
+ERRO: change_ingroups não é válido - N| TEST_IN SALESLINE -
+ERRO: agent_user não está logado - 6666
+ERRO: campanha não permite chamadas de entrada - 6666
+ERRO: o usuário não tem permissão para alterar grupos de agentes - 6666|TESTE|123
+ERRO: o dial_method da campanha não permite discagem automática de saída - 6666|TESTING
+ERRO: ingroup não existe - FAKE_IN| TEST_IN FAKE_IN SALESLINE -
+ERRO: ingroup_choices são necessários para valores ADD e REMOVE - ADD|
+SUCESSO: conjunto de funções change_ingroups - SIM| TEST_IN SALESLINE -|6666
+
+
+
+
+
+-------------------------------------------------- ------------------------------
+campos_de_atualização -
+
+DESCRIÇÃO:
+Atualiza os campos que são especificados com os valores. Isso atualizará os dados que estão na tela do agente na seção de informações do cliente.
+
+VALORES:
+agente_usuário -
+ Sequência alfanumérica OBRIGATÓRIA para o usuário do agente
+DADOS DO LEAD (deve preencher pelo menos um)
+   NOTA: Somente os campos especificados na chamada da API serão modificados
+	endereço1
+	endereço2
+	endereço3
+	telefone alternativo
+	cidade
+	Comentários
+	código_do_país
+	data_de_nascimento
+	e-mail
+	primeiro nome
+	gênero
+	gmt_offset_agora
+	sobrenome
+	Inicial do nome do meio
+	número de telefone
+	código_telefone
+	código postal
+	província
+	frase_de_segurança
+	id_fonte
+	estado
+	título
+	código_do_vendedor_lead
+	classificação
+	proprietário
+GATILHOS NÃO LEAD OPCIONAIS (estes ainda exigem que um lead esteja na tela do agente) -
+	formulário de recarga
+	recarregamento de script
+	script2recarregar
+	recarregar e-mail
+	carregar chat
+
+
+NOTAS:
+	- a maioria dos caracteres especiais não são permitidos, mas aspas simples são
+
+EXEMPLOS DE URLS:
+http://server/agc/api.php?source=test&user=6666&pass=1234&function=update_fields&agent_user=6666&vendor_lead_code=1234567&address1=
+http://server/agc/api.php?source=test&user=6666&pass=1234&function=update_fields&agent_user=6666&formreload=1
+
+RESPOSTAS:
+ERRO: update_fields não válido - 6666
+ERRO: agent_user não está logado - 6666
+ERRO: o usuário não tem permissão para modificar as informações do lead - 6666|1234
+ERRO: agent_user não tem um lead na tela - 6666|1234
+ERRO: nenhum campo foi definido - 6666
+SUCESSO: update_fields lead atualizado - 6666|1234|87498|vendor_lead_code='1234567',address1=''
+
+
+
+
+
+-------------------------------------------------- ------------------------------
+painel_de_atualização -
+
+DESCRIÇÃO:
+Atualizar/Recarregar/Redefinir um ou mais painéis na tela do agente: script, script 2, retornos de chamada, etc...
+
+VALORES:
+agente_usuário -
+ Sequência alfanumérica OBRIGATÓRIA para o usuário do agente
+
+GATILHOS DE ATUALIZAÇÃO DE PAINEL OPCIONAIS (não exigem que um lead esteja na tela do agente) -
+	formulário de recarga
+	recarregamento de script
+	script2recarregar
+	recarregar e-mail
+	carregar chat
+	retornos de chamada recarregar
+
+EXEMPLOS DE URLS:
+http://server/agc/api.php?source=test&user=6666&pass=1234&function=refresh_panel&agent_user=6666&scriptreload=1&script2reload=1&callbacksreload=1
+http://server/agc/api.php?source=test&user=6666&pass=1234&function=refresh_panel&agent_user=6666&formreload=1
+
+RESPOSTAS:
+ERRO: agent_user não é válido - 6666
+ERRO: agent_user não está logado - 6666
+ERRO: nenhum painel foi definido - 6666
+SUCESSO: solicitação refresh_panel enviada - 6666|1234|1|scriptreload,script2reload
+
+
+
+
+
+-------------------------------------------------- ------------------------------
+set_timer_action -
+
+DESCRIÇÃO:
+Aciona ações específicas na tela do agente após um número definido de segundos, como o Webform, uma chamada de predefinição de transferência-confi ou uma mensagem a ser exibida na tela do agente.
+
+VALORES:
+agente_usuário -
+ OBRIGATÓRIO, sequência alfanumérica para o usuário do agente
+valor -
+ OBRIGATÓRIO, uma destas opções: 'NENHUM','WEBFORM','WEBFORM2','D1_DIAL','D2_DIAL','D3_DIAL','D4_DIAL','D5_DIAL','MESSAGE_ONLY'
+notas -
+ Opcional, a mensagem a ser exibida com a ação do temporizador
+classificação -
+ Opcional, o número de segundos na chamada para exibir
+
+
+EXEMPLOS DE URLS:
+http://server/agc/api.php?source=test&user=6666&pass=1234&function=set_timer_action&agent_user=6666&value=MESSAGE_ONLY¬es=test+message&rank=15
+
+RESPOSTAS:
+ERRO: set_timer_action não é válido - 6666
+ERRO: agent_user não está logado - 6666
+ERRO: o usuário não tem permissão para modificar as configurações da campanha - 6666|1234
+SUCESSO: set_timer_action lead atualizado - 6666|1234|MESSAGE_ONLY|mensagem de teste|15
+
+
+
+
+
+-------------------------------------------------- ------------------------------
+st_login_log -
+
+DESCRIÇÃO:
+Procura o campo vicidial_users.custom_three (como "agentId") para associar a um ID de usuário vicidial. Se encontrado, ele preencherá o campo custom_four com um valor "teamId" e, em seguida, emitirá o ID de usuário vicidial
+
+VALORES:
+valor -
+ Sequência alfanumérica OBRIGATÓRIA para CRM AgentID
+vendor_id -
+ Sequência alfanumérica OBRIGATÓRIA para CRM TeamID
+
+EXEMPLOS DE URLS:
+http://server/agc/api.php?source=test&user=6666&pass=1234&function=st_login_log&value=876543&vendor_id=207
+
+RESPOSTAS:
+ERRO: st_login_log não é válido - 6666|207
+ERRO: nenhum usuário encontrado - 6666
+SUCESSO: usuário st_login_log encontrado - 6666
+
+
+
+
+
+-------------------------------------------------- ------------------------------
+st_get_agent_active_lead -
+
+DESCRIÇÃO:
+Procura o campo vicidial_users.custom_three (como "agentId") para associar a um ID de usuário vicidial. Se encontrado, ele produzirá os campos lead_id e phone number ativos, vendor_lead_code, province, security_phrase e source_id.
+
+VALORES:
+valor -
+ Sequência alfanumérica OBRIGATÓRIA para CRM AgentID
+vendor_id -
+ Sequência alfanumérica OBRIGATÓRIA para CRM TeamID
+
+EXEMPLOS DE URLS:
+http://server/agc/api.php?source=test&user=6666&pass=1234&function=st_get_agent_active_lead&value=876543&vendor_id=207
+
+RESPOSTAS:
+ERRO: st_get_agent_active_lead não é válido - 6666|207
+ERRO: nenhum usuário encontrado - 6666
+ERRO: usuário não logado - 6666
+ERRO: nenhum lead ativo encontrado - 6666
+SUCESSO: st_get_agent_active_lead lead encontrado - 6666|7275551212|123456|9987-1234765|SK|WILLIAMS|JUH764AJJJ9
+
+
+
+
+
+-------------------------------------------------- ------------------------------
+ra_call_control -
+
+DESCRIÇÃO:
+Permite o controle de chamadas de agentes remotos: chamadas de desligamento/transferência sendo tratadas por agentes remotos, também opções para registrar uma disposição e duração da chamada
+
+VALORES:
+valor -
+ OBRIGATÓRIO, O ID da chamada recebida como campo CallerIDname ou um cabeçalho SIP especial, ou seja, Y0315201639000402027
+agente_usuário -
+ OBRIGATÓRIO, sequência alfanumérica para usuário do agente remoto
+estágio -
+ OBRIGATÓRIO, uma destas opções: 'HANGUP','EXTENSIONTRANSFER','INGROUPTRANSFER'
+escolhas_ingroup -
+ OPCIONAL, necessário somente se o estágio INGROUPTRANSFER for usado, deve ser um único grupo ativo, a opção reservada de "DEFAULTINGROUP" pode ser usada para enviar a chamada para o grupo padrão para o grupo ou campanha que originou a chamada para o agente remoto
+número_de_telefone -
+ OPCIONAL, necessário somente se o estágio EXTENSIONTRANSFER for usado, deve ser um número completo quando discado que discará através do contexto padrão
+status -
+ OPCIONAL, status da chamada, máximo de 6 caracteres, se não for definido, o status será RAXFER
+
+EXEMPLOS DE URLS:
+http://server/agc/api.php?source=test&user=6666&pass=1234&agent_user=1028&function=ra_call_control&stage=INGROUPTRANSFER&ingroup_choices=DEFAULTINGROUP&value=Y0316001655000402028
+http://server/agc/api.php?source=test&user=6666&pass=1234&agent_user=9877&function=ra_call_control&stage=HANGUP&status=TEST88&value=V2221052110000798236
+
+RESPOSTAS:
+ERRO: ra_call_control não é válido - Y0315201639000402027|6666|INGROUPTRANSFER
+ERRO: nenhum usuário encontrado - 6666
+ERRO: usuário não logado - 6666
+ERRO: nenhuma chamada ativa encontrada - Y0315201639000402027
+ERRO: phone_number não é válido - 9
+ERRO: ingroup não é válido - TESTINGROUP
+ERRO: estágio não é válido - XYZ
+SUCESSO: ra_call_control transferido - 6666|Y0315201639000402027|SALESLINE
+SUCESSO: ra_call_control desligou - 6666|Y0315201639000402027|DESLIGAMENTO
+
+
+
+
+
+-------------------------------------------------- ------------------------------
+enviar_dtmf -
+
+DESCRIÇÃO:
+Envia a string de sinal dtmf para a sessão do agente
+
+VALORES: (valor)
+somente caracteres DTMF válidos com estas substituições:
+  P = # (libra ou hash)
+  S = * (estrela)
+  Q = (um segundo de silêncio)
+
+EXEMPLOS DE URLS:
+http://server/agc/api.php?source=test&user=6666&pass=1234&agent_user=1000&function=send_dtmf&value=QQQQ1234SQQQQQ6654P
+
+RESPOSTAS:
+ERRO: send_dtmf não é válido - QQ|6666
+ERRO: nenhum usuário encontrado - 6666
+ERRO: agent_user não está logado - 6666
+SUCESSO: função send_dtmf definida - QQQQ1234SQQQQQ6654P|6666
+
+
+
+
+
+-------------------------------------------------- ------------------------------
+chamada_do_parque -
+
+DESCRIÇÃO:
+envia comando para estacionar o cliente ou retirá-lo do estacionamento
+
+VALORES:
+ valor -
+  OBRIGATÓRIO, as opções estão abaixo
+   PARK_CUSTOMER - enviar o cliente para a extensão do parque conforme definido na campanha em que o agente está conectado
+   GRAB_CUSTOMER - pegue o cliente da extensão do parque e envie-o para a sessão do agente
+   PARK_IVR_CUSTOMER - enviar o cliente para o ivr do parque conforme definido na campanha em que o agente está conectado, o cliente retornará após concluir o IVR
+   GRAB_IVR_CUSTOMER - pegue o cliente do ivr do parque e envie-o para a sessão do agente
+   PARK_XFER - enviar chamada de terceiros para a extensão do parque conforme definido na campanha em que o agente está conectado
+   GRAB_XFER - captura chamadas de terceiros da extensão do parque e as envia para a sessão do agente
+   SWAP_PARK_CUSTOMER - enviar o cliente para a extensão do parque e capturar a chamada de terceiros da extensão do parque e enviá-los para a sessão do agente
+   SWAP_PARK_XFER - envie uma chamada de terceiros para a extensão do parque e pegue o cliente da extensão do parque e o envie para a sessão do agente
+   HANGUP_XFER_GRAB_CUSTOMER - desligue a linha de terceiros e pegue o cliente da extensão do parque
+
+EXEMPLOS DE URLS:
+http://server/agc/api.php?source=test&user=6666&pass=1234&agent_user=1000&function=park_call&value=PARK_CUSTOMER
+http://server/agc/api.php?source=test&user=6666&pass=1234&agent_user=1000&function=park_call&value=GRAB_CUSTOMER
+http://server/agc/api.php?source=test&user=6666&pass=1234&agent_user=1000&function=park_call&value=PARK_IVR_CUSTOMER
+http://server/agc/api.php?source=test&user=6666&pass=1234&agent_user=1000&function=park_call&value=GRAB_IVR_CUSTOMER
+
+RESPOSTAS:
+ERRO: park_call não é válido - PARK_CUSTOMER|6666
+ERRO: nenhum usuário encontrado - 6666
+ERRO: agent_user não está logado - 6666
+ERRO: agent_user não tem um lead na tela - 6666
+SUCESSO: função park_call definida - PARK_CUSTOMER|6666
+
+
+
+
+
+-------------------------------------------------- ------------------------------
+transfer_conference -
+
+DESCRIÇÃO:
+envia vários comandos relacionados ao quadro transfer-conf do agente
+
+VALORES:
+ valor -
+  OBRIGATÓRIO, as opções estão abaixo
+   HANGUP_XFER - desligue a linha de terceiros
+   HANGUP_BOTH - desligar linha de cliente e de terceiros
+   BLIND_TRANSFER - envia uma chamada para um número de telefone definido
+   LEAVE_VM - transferência cega do cliente para a mensagem de correio de voz definida pela campanha
+   LOCAL_CLOSER - enviar chamada para outro agente ViciDial, deve ter um campo phone_number opcional no grupo para o agente AGENTDIRECT
+   DIAL_WITH_CUSTOMER - Chamada de 3 vias com o cliente na linha
+   PARK_CUSTOMER_DIAL - enviar o cliente para o estacionamento e fazer uma chamada para um terceiro
+   LEAVE_3WAY_CALL - deixa o cliente e o terceiro em conferência e vai para a tela de disposição
+ número_de_telefone -
+  OPCIONAL/OBRIGATÓRIO, necessário para qualquer transferência ou valor de discagem
+ escolhas_ingroup -
+  OPCIONAL/OBRIGATÓRIO, obrigatório para transferências locais_closer e consultivas, deve ser um único grupo ativo, a opção reservada de "DEFAULTINGROUP" pode ser usada para selecionar o grupo padrão para o grupo ou campanha de onde a chamada se originou
+ consultivo -
+  OPCIONAL, quando você deseja fazer uma transferência consultiva com seu cliente e outro agente ViciDial, 'SIM' e 'NÃO' são opções válidas, você só pode usar isso com DIAL_WITH_CUSTOMER ou PARK_CUSTOMER_DIAL
+ dial_override -
+  OPCIONAL, disca exatamente o número de telefone especificado sem código de telefone ou prefixo definido pela campanha, 'SIM' e 'NÃO' são opções válidas
+ group_alias -
+  OPCIONAL, define qual número de identificação de chamadas usar ao fazer DIAL_WITH_CUSTOMER ou PARK_CUSTOMER_DIAL
+ cid_escolha -
+  OPCIONAL, método alternativo para número de identificação de chamadas a ser usado ao fazer DIAL_WITH_CUSTOMER ou PARK_CUSTOMER_DIAL: 'CAMPAIGN','AGENT_PHONE','CUSTOMER','CUSTOM_CID'
+ telefones_multi_dial -
+  OPCIONAL, para uso somente com "Chamadas de Agente 3 vias Press-1", contém até 10 números de telefone separados por vírgulas: "2125551212,4075551212,3125551212" (duplicatas serão removidas)
+ md_check -
+  OPCIONAL, para uso somente com a opção 'multi_dial_phones' acima, se estiver definido como 'SIM', ele verificará se há chamadas anteriores de 3 vias pressionadas 1 ainda ativas e mostrará um erro se alguma for encontrada
+ tw_check -
+  OPCIONAL, para uso somente com as opções de discagem de chamada de 3 vias acima, se estiver definido como 'SIM', ele verificará se há chamadas de 3 vias anteriores ainda ativas e mostrará um erro se alguma for encontrada
+
+EXEMPLOS DE URLS:
+http://server/agc/api.php?source=test&user=6666&pass=1234&agent_user=1000&function=transfer_conference&value=HANGUP_XFER
+http://server/agc/api.php?source=test&user=6666&pass=1234&agent_user=1000&function=transfer_conference&value=HANGUP_BOTH
+http://server/agc/api.php?source=test&user=6666&pass=1234&agent_user=1000&function=transfer_conference&value=BLIND_TRANSFER&phone_number=8500
+http://server/agc/api.php?source=test&user=6666&pass=1234&agent_user=1000&function=transfer_conference&value=LEAVE_VM
+http://server/agc/api.php?source=test&user=6666&pass=1234&agent_user=1000&function=transfer_conference&value=LOCAL_CLOSER&ingroup_choices=DEFAULTINGROUP
+http://server/agc/api.php?source=test&user=6666&pass=1234&agent_user=1000&function=transfer_conference&value=LOCAL_CLOSER&ingroup_choices=AGENTDIRECT&phone_number=6666
+http://server/agc/api.php?source=test&user=6666&pass=1234&agent_user=1000&function=transfer_conference&value=LOCAL_CLOSER&ingroup_choices=SALESLINE
+http://server/agc/api.php?source=test&user=6666&pass=1234&agent_user=1000&function=transfer_conference&value=DISCAGEM_COM_CLIENTE&ingroup_choices=TESTE_EM3&consultative=SIM
+http://server/agc/api.php?source=test&user=6666&pass=1234&agent_user=1000&function=transfer_conference&value=DISCAGEM_COM_CLIENTE&phone_number=8500
+http://server/agc/api.php?source=test&user=6666&pass=1234&agent_user=1000&function=transfer_conference&value=DISCAGEM_COM_CLIENTE&phone_number=919998888112&dial_override=SIM
+http://server/agc/api.php?source=test&user=6666&pass=1234&agent_user=1000&function=transfer_conference&value=DISCAGEM_COM_CLIENTE&phone_number=919998888112&cid_choice=CLIENTE
+http://server/agc/api.php?source=test&user=6666&pass=1234&agent_user=1000&function=transfer_conference&value=PARK_CUSTOMER_DIAL&ingroup_choices=TEST_IN3&consultative=YES
+http://server/agc/api.php?source=test&user=6666&pass=1234&agent_user=1000&function=transfer_conference&value=LEAVE_3WAY_CALL
+
+RESPOSTAS:
+ERRO: transfer_conference não é válido - QQ|6666
+ERRO: valor não é válido - XYZFUNCTION|6666
+ERRO: nenhum usuário encontrado - 6666
+ERRO: ingroup não é válido - XYZINGROUP
+ERRO: agent_user não está logado - 6666
+ERRO: agent_user não tem uma chamada ativa - 6666
+ERRO: caller_id_number do group_alias não é válido - 6666|TESTING|123
+ERRO: group_alias não é válido - 6666|TESTING
+ERRO: cid_choice não é válido - 6666|TESTING
+ERRO: agent_user tem chamadas ativas anteriores de 3 vias - 6666|1|0|SIM
+ERRO: agent_user tem uma chamada ativa de 3 vias no momento - 6666|1|0|SIM
+SUCESSO: função transfer_conference definida - LOCAL_CLOSER|SALESLINE||YES|6666|M2141842580000000044|
+
+
+
+
+
+-------------------------------------------------- ------------------------------
+gravação -
+
+DESCRIÇÃO:
+envia um sinal de início/parada de gravação ou status de gravação do agente
+
+VALORES:
+ valor -
+  OBRIGATÓRIO, as opções estão abaixo
+   START - envia um sinal de "iniciar gravação" para a tela do agente
+            (você pode ter várias gravações acontecendo ao mesmo tempo)
+   STOP - envia um sinal de "parar gravação" para a tela do agente
+            (isso interromperá todas as gravações ativas na tela do agente)
+   STATUS - exibe resultados de gravação ativa e informações da sessão do agente
+            (retorna: usuário|id_de_gravação|nome_de_arquivo|servidor|hora_de_início|servidor_agente|sessão|status_agente)
+  estágio -
+    OPCIONAL, valor para anexar ao nome do arquivo de gravação, limitado a 14 caracteres, se mais, ele será truncado. Funciona somente com o valor START
+
+EXEMPLOS DE URLS:
+http://server/agc/api.php?source=test&user=6666&pass=1234&agent_user=1000&function=recording&value=START
+http://server/agc/api.php?source=test&user=6666&pass=1234&agent_user=1000&function=recording&value=STOP
+http://server/agc/api.php?source=test&user=6666&pass=1234&agent_user=1000&function=recording&value=STATUS
+http://server/agc/api.php?source=test&user=6666&pass=1234&agent_user=1000&function=recording&value=START&stage=_MIDCALL
+
+RESPOSTAS:
+ERRO: nenhum usuário encontrado - 6666
+ERRO: agent_user não está logado - 6666
+ERRO: parar erro de gravação - 6666|||||192.168.1.5|8600051|PAUSADO
+SUCESSO: função de gravação enviada - 6666|PARAR||||192.168.1.5|8600051|PAUSADO
+SUCESSO: função de gravação enviada - 6666|INICIAR||||192.168.1.5|8600051|PAUSADO
+SUCESSO: função de gravação enviada - 6666|START_MIDCALL||||192.168.1.5|8600051|PAUSED
+AVISO: não gravando - 6666|||||192.168.1.5|8600051|PAUSADO
+AVISO: gravação ativa - 6666|121242|20120810-012008__6666_|192.168.1.5|2012-08-10 01:20:10|192.168.1.5|8600051|PAUSADO
+
+
+
+
+
+-------------------------------------------------- ------------------------------
+webphone_url -
+
+DESCRIÇÃO:
+exibir ou iniciar a URL do webphone para a sessão do agente atual
+
+VALORES:
+ valor -
+  OBRIGATÓRIO, as opções estão abaixo:
+   EXIBIÇÃO - exibe apenas a URL do webphone, se habilitado
+   LAUNCH - redireciona a url para a url do webphone para iniciá-lo
+
+EXEMPLOS DE URLS:
+http://server/agc/api.php?source=test&user=6666&pass=1234&agent_user=1000&function=webphone_url&value=DISPLAY
+http://server/agc/api.php?source=test&user=6666&pass=1234&agent_user=1000&function=webphone_url&value=LAUNCH
+
+RESPOSTAS:
+<se a função for bem-sucedida, a URL será exibida ou iniciada>
+ERRO: nenhum usuário encontrado - 6666
+ERRO: agent_user não está logado - 6666
+ERRO: webphone_url não é válido - 6666|DISPLAY
+ERRO: erro webphone_url - a url do webphone está vazia - 6666
+ERRO: erro webphone_url - sem dados de sessão - 6666
+
+
+
+
+
+-------------------------------------------------- ------------------------------
+agente de chamada -
+
+DESCRIÇÃO:
+envie uma chamada para conectar o agente à sua sessão
+
+VALORES:
+ valor -
+  OBRIGATÓRIO, as opções estão abaixo:
+   CHAMADA - faz a chamada da sessão do agente para o telefone do agente
+
+NOTAS:
+esta função não foi projetada para funcionar com agentes on-hook
+
+EXEMPLOS DE URLS:
+http://server/agc/api.php?source=test&user=6666&pass=1234&agent_user=1000&function=call_agent&value=CALL
+
+RESPOSTAS:
+ERRO: nenhum usuário encontrado - 6666
+ERRO: agent_user não está logado - 6666
+ERRO: call_agent não é válido - 6666|CALL
+ERRO: erro call_agent - entrada está vazia - 6666
+ERRO: erro call_agent - sem dados de sessão - 6666
+SUCESSO: função call_agent enviada - 6666
+
+
+
+
+
+-------------------------------------------------- ------------------------------
+reprodução_de_áudio -
+
+DESCRIÇÃO:
+Áudio básico de reprodução/parada/pausa/retomada/reinício na sessão do agente
+
+NOTA: Os recursos PAUSE/RESUME/RESTART funcionam apenas com o Asterisk 1.8 e superior
+       (Em versões do Asterisk anteriores à 1.8, você pode replicar RESTART usando PLAY e dial_override=Y)
+
+VALORES:
+ estágio -
+  OBRIGATÓRIO, as opções estão abaixo:
+   PLAY - inicia a reprodução do novo arquivo de áudio na sessão do agente
+   STOP - interrompe a reprodução de áudio na sessão do agente
+   PAUSE - pausa a reprodução do áudio
+   RESUME - retoma a reprodução do áudio após a pausa
+   RESTART - reinicia a reprodução no início do áudio
+ valor -
+  OBRIGATÓRIO para a fase de 'PLAY', nome do arquivo de áudio na loja de áudio a ser reproduzido, NÃO deve ter extensão
+ dial_override -
+  OPCIONAL, (S ou N), o padrão é N. Permite que você REPRODUZA sem emitir um STOP para um arquivo de áudio que está sendo reproduzido
+
+
+EXEMPLOS DE URLS:
+http://server/agc/api.php?source=test&user=6666&pass=1234&agent_user=1000&function=audio_playback&value=ss-noservice&stage=PLAY
+http://server/agc/api.php?source=test&user=6666&pass=1234&agent_user=1000&function=audio_playback&stage=STOP
+http://server/agc/api.php?source=test&user=6666&pass=1234&agent_user=1000&function=audio_playback&stage=PAUSE
+http://server/agc/api.php?source=test&user=6666&pass=1234&agent_user=1000&function=audio_playback&stage=RESUME
+http://server/agc/api.php?source=test&user=6666&pass=1234&agent_user=1000&function=audio_playback&stage=RESTART
+http://server/agc/api.php?source=test&user=6666&pass=1234&agent_user=1000&function=audio_playback&value=ss-noservice&stage=PLAY&dial_override=Y
+
+RESPOSTAS:
+ERRO: nenhum usuário encontrado - 6666
+ERRO: agent_user não está logado - PLAY|6666
+ERRO: reprodução de áudio inválida - ss-noservice|PLAY|6666
+ERRO: erro de reprodução de áudio - entrada vazia - PLAY|6666
+ERRO: erro de reprodução de áudio - sem dados de sessão - PLAY|6666
+ERRO: erro de reprodução de áudio - nenhum áudio é reproduzido na sessão do agente - 8600051|10.10.10.15|PAUSE|6666
+ERRO: erro de reprodução de áudio - áudio já está sendo reproduzido na sessão do agente - 8600051|10.10.10.15|PLAY|6666
+AVISO: reprodução de áudio reprodução anterior interrompida - PLAY|Y|6666
+SUCESSO: função audio_playback enviada - ss-noservice|PLAY|6666
+
+
+
+
+
+-------------------------------------------------- ------------------------------
+interruptor_lead -
+
+DESCRIÇÃO:
+Para agentes em uma chamada de entrada ao vivo, alterna lead_id da chamada de entrada ao vivo na tela do agente, incluindo logs associados. Você pode definir um lead_id ou um vendor_lead_code para alternar. Funciona como a função SELECT do recurso LEAD SEARCH na tela do agente.
+
+VALORES:
+lead_id -
+ Qualquer lead_id válido do sistema (lead_id ou vendor_lead_code são necessários) se ambos forem definidos, lead_id substituirá vendor_lead_code
+vendor_lead_code -
+ OPCIONAL, qualquer código de lead de fornecedor válido
+
+EXEMPLOS DE URLS:
+http://server/agc/api.php?source=test&user=6666&pass=1234&agent_user=1000&function=switch_lead&lead_id=12345
+http://server/agc/api.php?source=test&user=6666&pass=1234&agent_user=1000&function=switch_lead&vendor_lead_code=1234567890
+
+RESPOSTAS:
+ERRO: switch_lead não é válido - ||6666
+ERRO: nenhum usuário encontrado - 6666
+ERRO: agent_user não está logado - 6666
+ERRO: agent_user não tem uma chamada ativa - 6666
+ERRO: a chamada do agente não é recebida - 6666|V2012367890123456789
+ERRO: campanha não encontrada - 6666|TESTCAMP
+ERRO: a campanha não permite pesquisa de leads de entrada - 6666|TESTCAMP
+ERRO: switch-to lead não encontrado - 6666|12345|123456789
+SUCESSO: conjunto de funções switch_lead - 6666|12345|1234567890|TESTCAMP|12346
+
+
+
+
+
+-------------------------------------------------- ------------------------------
+vm_mensagem -
+
+OBSERVAÇÕES IMPORTANTES:
+- Defina a configuração "Mensagem da secretária eletrônica" da campanha como 'LTTagent' para que isso funcione.
+- Existem algumas outras configurações de campanha que podem substituir esta função, então você deve desabilitar 'AM Message Wildcards' e 'VM Message Groups'.
+
+DESCRIÇÃO:
+Defina uma mensagem de correio de voz personalizada para ser reproduzida quando o agente clicar no botão VM na tela do agente
+
+VALORES:
+valor -
+ OBRIGATÓRIO, um arquivo de áudio ou vários arquivos de áudio (separados por barras verticais) para reproduzir quando a chamada for enviada à VM pelo agente
+lead_id -
+ OPCIONAL, O lead_id da chamada em que o agente está atualmente, se preenchido, validará que é o lead com o qual o agente está falando
+
+EXEMPLOS DE URLS:
+http://server/agc/api.php?source=test&user=6666&pass=1234&agent_user=1000&function=vm_message&value=EXship01|EXship02|EXship03
+http://server/agc/api.php?source=test&user=6666&pass=1234&agent_user=1000&function=vm_message&lead_id=12345&value=appointment_reminder2
+
+RESPOSTAS:
+ERRO: vm_message não é válida - ||6666
+ERRO: nenhum usuário encontrado - 6666
+ERRO: agent_user não está logado - 6666
+ERRO: a chamada atual não corresponde ao lead_id enviado - 6666
+ERRO: agent_user não tem uma chamada ativa - 6666
+SUCESSO: função vm_message definida - 6666|12345|EXship01|EXship02|EXship03
+
+
+
+
+
+-------------------------------------------------- ------------------------------
+pause_code -
+
+DESCRIÇÃO:
+definir um código de pausa para um agente que está em pausa
+
+VALORES:
+ valor - código de pausa a ser definido, deve ter 6 caracteres ou menos
+
+NOTAS:
+esta função não funcionará se o agente não estiver pausado
+
+EXEMPLOS DE URLS:
+http://server/agc/api.php?source=test&user=6666&pass=1234&agent_user=1000&function=pause_code&value=BREAK
+
+RESPOSTAS:
+ERRO: nenhum usuário encontrado - 6666
+ERRO: agent_user não está logado - 6666
+ERRO: pause_code não é válido - 6666|JUMPING
+ERRO: erro pause_code - agente não está pausado - 6666
+SUCESSO: função pause_code enviada - 6666
+
+
+
+
+
+-------------------------------------------------- ------------------------------
+chamadas_na_fila_contagem -
+
+DESCRIÇÃO:
+exibir uma contagem das chamadas em espera na fila para o agente específico
+
+VALORES:
+ valor -
+  OBRIGATÓRIO, as opções estão abaixo:
+   DISPLAY - exibe o número de chamadas na fila que podem ser enviadas para este agente
+
+EXEMPLOS DE URLS:
+http://server/agc/api.php?source=test&user=6666&pass=1234&agent_user=1000&function=chamadas_na_contagem_da_fila&value=DISPLAY
+
+RESPOSTAS:
+ERRO: nenhum usuário encontrado - 6666
+ERRO: agent_user não está logado - 6666
+SUCESSO: calls_in_queue_count - 0
+
+
+
+
+
+-------------------------------------------------- ------------------------------
+force_fronter_leave_3way -
+
+DESCRIÇÃO:
+enviará um comando ao agente fronter para deixar a chamada 3way em que o agente executor está. Não executará o comando para o 'agent_user' nomeado, mas procurará pelo outro usuário mais antigo atualmente em uma chamada com o mesmo lead_id com o qual o agent_user nomeado está no telefone.
+
+VALORES:
+ valor -
+  OBRIGATÓRIO, as opções estão abaixo:
+   LOCAL_ONLY - procura apenas por fronter no cluster local
+   LOCAL_AND_CCC - procura no cluster local e no CCC remoto para enviar o comando (sempre verificará o local primeiro)
+   CCC_REMOTE - use isto quando o closer não estiver neste cluster
+  lead_id -
+    OPCIONAL, somente para ser usado com comandos de valor CCC_REMOTE
+
+EXEMPLOS DE URLS:
+http://server/agc/api.php?source=test&user=6666&pass=1234&agent_user=1000&function=force_fronter_leave_3way&value=LOCAL_ONLY
+http://server/agc/api.php?source=test&user=6666&pass=1234&agent_user=1000&function=force_fronter_leave_3way&value=LOCAL_AND_CCC
+
+RESPOSTAS:
+ERRO: nenhum usuário encontrado - 6666
+ERRO: agent_user não está logado - 6666
+ERRO: agent_user não está em uma chamada telefônica - 6666
+ERRO: nenhuma fronteira encontrada - 6666
+SUCESSO: force_fronter_leave_3way ENVIADO - 6667
+SUCESSO: comando force_fronter_leave_3way enviado via CCC - test_ccc
+
+
+
+
+
+-------------------------------------------------- ------------------------------
+force_fronter_audio_stop -
+
+DESCRIÇÃO:
+enviará um comando para a sessão do agente fronter para interromper qualquer reprodução de áudio que esteja sendo reproduzida nela. Não executará o comando para o 'agent_user' nomeado, mas procurará por outra sessão de usuário atualmente em uma chamada com o mesmo lead_id com o qual o agent_user nomeado está no telefone.
+
+VALORES:
+ valor -
+  OBRIGATÓRIO, as opções estão abaixo:
+   LOCAL_ONLY - procura apenas por fronter no cluster local
+   LOCAL_AND_CCC - procura no cluster local e no CCC remoto para enviar o comando (sempre verificará o local primeiro)
+   CCC_REMOTE - use isto quando o closer não estiver neste cluster
+  lead_id -
+    OPCIONAL, somente para ser usado com comandos de valor CCC_REMOTE
+
+EXEMPLOS DE URLS:
+http://server/agc/api.php?source=test&user=6666&pass=1234&agent_user=1000&function=force_fronter_audio_stop&value=LOCAL_ONLY
+http://server/agc/api.php?source=test&user=6666&pass=1234&agent_user=1000&function=force_fronter_audio_stop&value=LOCAL_AND_CCC
+
+RESPOSTAS:
+ERRO: force_fronter_audio_stop não é válido - LOCAL_AND_CCC|6666
+ERRO: O USUÁRIO auth NÃO TEM PERMISSÃO PARA USAR ESTA FUNÇÃO - LOCAL_AND_CCC|6666|force_fronter_audio_stop
+ERRO: nenhum usuário encontrado - 6666
+ERRO: agent_user não está logado - 6666
+ERRO: agent_user não está em uma chamada telefônica - 6666
+ERRO: nenhuma sessão de fronter encontrada - |6666|1234
+ERRO: nenhuma fronteira encontrada - 6666
+ERRO: erro force_fronter_audio_stop - nenhum áudio é reproduzido em outra sessão do agente - 8600051|10.0.0.5||6666|1234
+SUCESSO: função force_fronter_audio_stop ENVIADA - LOCAL_AND_CCC||6667|1234
+SUCESSO: comando force_fronter_audio_stop enviado via CCC - test_ccc
+
+
+
+
+
+-------------------------------------------------- ------------------------------
+enviar_notificação -
+
+DESCRIÇÃO:
+pode enviar uma mensagem personalizável e efeitos de confete personalizáveis ​​para uma ou mais telas de agentes ativos
+
+VALORES:
+ tipo_destinatário -
+  OBRIGATÓRIO, as opções estão abaixo:
+   USUÁRIO - enviar notificação para um único usuário
+   USER_GROUP - enviar notificação a todos os agentes conectados em um user_group específico no momento em que a notification_date for atingida
+   CAMPANHA - enviar notificação a todos os agentes conectados a uma campanha específica no momento em que a data de notificação for atingida
+   ** Se um destinatário for passado, mas o recipient_type estiver faltando ou nenhum dos valores acima, o valor do destinatário será usado para procurar um recipient_type correspondente. A ordem de prioridade é USER, depois USER_GROUP, depois CAMPAIGN
+ destinatário -
+  OBRIGATÓRIO, precisa ser um valor correspondente ao recipient_type, ou seja, se você enviar para um recipient_type USER, o recipient deve ser o ID desse usuário. Para USER_GROUP, o recipient deve ser um user_group válido do seu discador.
+ data_de_notificação
+  OPCIONAL, data e hora no formato aaaa-mm-dd HH:ii:ss para enviar a notificação. Se os destinatários desejados não estiverem logados, a notificação permanecerá ativa por 1 minuto após a data/hora ser atingida. O padrão é a data e hora atuais.
+ texto_de_notificação
+  OPCIONAL, texto a ser exibido na caixa de alerta do agente na interface do agente do destinatário.
+ tamanho_do_texto
+  OPCIONAL, usado para personalizar o tamanho do texto de notificação em pontos. Apenas numérico, o valor padrão é 12.
+ fonte_texto
+  OPCIONAL, usado para personalizar a fonte do texto de notificação. O valor padrão é 'Arial'.
+ peso_do_texto
+  OPCIONAL, usado para personalizar a aparência do texto de notificação - atualmente suporta 'negrito', 'itálico' e 'sublinhado'. O valor pode ser passado como uma string delimitada ("negrito,sublinhado") ou até mesmo uma string única longa ("sublinhaitalicbold"). O valor padrão é 'negrito'.
+ cor_do_texto
+  OPCIONAL, usado para personalizar a cor do texto de notificação - pode usar um nome de cor ('vermelho', 'azul-petróleo', 'amarelo', 'verde') ou um valor hexadecimal de três ou seis caracteres ("FF0", "009900"). O padrão é 'preto'.
+ mostrar_confete
+  OPCIONAL, um sinalizador S/N que determina se um efeito de confete aparecerá na interface do agente. O padrão é 'N'.
+ duração
+  OPCIONAL, o tempo em segundos para mostrar a animação de confete na interface do agente. Apenas numérico, o padrão é coletado do contêiner de configurações "CONFETTI_SETTINGS" - se não existir, o padrão é 2 segundos. O valor máximo é 10 segundos.
+ Contagem máxima de partículas
+  OPCIONAL, o número de partículas de confete para mostrar durante a animação. Apenas numérico, o padrão é coletado do contêiner de configurações "CONFETTI_SETTINGS" - se não existir, o padrão é 2350 partículas. O valor máximo é 9999 partículas.
+ velocidade de partícula
+  OPCIONAL, a velocidade na qual o confete flutua pela tela. Apenas numérico, o padrão é coletado do contêiner de configurações "CONFETTI_SETTINGS" - se não existir, o padrão é 60. O valor máximo é 100.
+
+EXEMPLOS DE URLS:
+http://server/agc/api.php?user=6666&pass=1234&function=send_notification&source=test&recipient=6666&recipient_type=USER&show_confetti=Y
+http://server/agc/api.php?user=6666&pass=1234&function=send_notification&source=test&recipient=AGENTS&recipient_type=USER_GROUP&show_confetti=N¬ification_text=Dez+minutos+para+o+fechamento&text_size=36&text_color=9900FF&text_weight=bold,italic,underline
+http://server/agc/api.php?user=6666&pass=1234&function=send_notification&source=test&recipient=TESTCAMP&recipient_type=CAMPAIGN&show_confetti=Y&duration=4&maxParticleCount=3000&particleSpeed=50¬ification_text=VOCÊ+ESTÁ+DEMITIDO&text_weight=underline&text_size=48&text_color=red
+
+RESPOSTAS:
+ERRO: As notificações da API do agente estão desabilitadas neste sistema - 0
+ERRO: Destinatário ou recipient_type ausente: (<destinatário>|<tipo_destinatário>)
+ERRO: Solicitação inválida, variáveis ​​ausentes
+ERRO: ACESSO À CAMPANHA TESTCAMP NÃO PERMITIDO PARA O USUÁRIO 6666
+ERRO: ACESSO AO GRUPO DE USUÁRIOS ADMIN NÃO PERMITIDO PARA O USUÁRIO 6666
+ERRO: user_group NÃO EXISTE - ADMIN|6666
+ERRO: 6667 NÃO EXISTE em vicidial_users
+SUCESSO: notificação na fila
+** Além disso, há mensagens de "AVISO" que serão incluídas na resposta se a data da notificação estiver formatada incorretamente/ausente ou se o recipient_type não estiver incluído.
+
+
+
+
+-------------------------------------------------- ------------------------------
+Outras informações:
+
+
+Exemplo de opções de consulta MySQL para executar funções de API (não disponível para todas as funções):
+atualizar vicidial_live_agents definir external_hangup=1 onde user='1000';
+atualizar vicidial_live_agents definir external_status='A' onde user='1000';
+
+
+CRIAR TABELA vicidial_api_log (
+api_id INT(9) INCREMENTO AUTOMÁTICO NÃO ASSINADO CHAVE PRIMÁRIA NÃO NULA,
+usuário VARCHAR(20) NÃO NULO,
+api_date DATAHORA,
+api_script VARCHAR(10),
+função VARCHAR(20) NÃO NULO,
+agente_usuário VARCHAR(20),
+valor VARCHAR(255),
+resultado VARCHAR(10),
+razão_resultado VARCHAR(255),
+fonte VARCHAR(20),
+dados TEXTO,
+índice(data_api)
+);
