@@ -1,5 +1,5 @@
 <?php
-# api.php
+# agente_api.php
 # 
 # Copyright (C) 2023  Matt Florell <vicidial@gmail.com>    LICENSE: AGPLv2
 #
@@ -192,54 +192,87 @@ if ($response !== null) {
 
 #######################################################FIM####################################################################
 
-#######################################################JSON COM ARRAYFIM####################################################################
-###ADDLEAD - LISTA
+#######################################################JSON -RESTFULL###################################################################
 
-$json = json_decode(file_get_contents('php://input'), true);
+ 
 
-$source = $json['source'];
-$user = $json['user'];
-$pass = $json['pass'];
-$function = $json['function'];
-$campaign_id = $json['campaign_id'];
-$list_id = $json['list_id'];
+// Ler o corpo da requisição  
+$json = json_decode(file_get_contents('php://input'), true);  
+  
+// Validar os dados  
+if (!isset($json['source']) || !isset($json['user']) || !isset($json['pass']) || !isset($json['agent_user']) || !isset($json['function']) || !isset($json['value'])) {  
+    $response = ['error' => 'Invalid request'];  
+    header('Content-Type: application/json');  
+    header('HTTP/1.1 400 Bad Request');  
+    echo json_encode($response);  
+    exit;  
+}  
+  
+// Atribuir os valores  
+$source = $json['source'];  
+$user = $json['user'];  
+$pass = $json['pass'];  
+$function = $json['function'];  
+$agent_user = $json['agent_user'];  
+$agent_pass = isset($json['agent_pass']) ? $json['agent_pass'] : null;  
+$campaign_id = isset($json['campaign_id']) ? $json['campaign_id'] : null;  
+$dial_prefix = isset($json['dial_prefix']) ? $json['dial_prefix'] : null;  
+$first_name = isset($json['first_name']) ? $json['first_name'] : null;  
+$focus = isset($json['focus']) ? $json['focus'] : null;  
+$last_name = isset($json['last_name']) ? $json['last_name'] : null;  
+$list_id = isset($json['list_id']) ? $json['list_id'] : null;  
+$phone_number = isset($json['phone_number']) ? $json['phone_number'] : null;  
+$phone_code = isset($json['phone_code']) ? $json['phone_code'] : null;  
+$preview = isset($json['preview']) ? $json['preview'] : null;  
+$search = isset($json['search']) ? $json['search'] : null;  
+$value = $json['value'];  
+  
+// Array de funções  
+$functions = array(  
+    'external_status' => 'execute_external_status',  
+    'another_function' => 'execute_another_function',  
+    // Adicione outras funções conforme necessário  
+);  
+  
+// Executar a ação correspondente à função solicitada  
+if (isset($functions[$function])) {  
+    $result = $functions$function;  
+    if ($result) {  
+        $response = ['result' => 'SUCCESS', 'result_reason' => $function . ' function set'];  
+        header('Content-Type: application/json');  
+        header('HTTP/1.1 200 OK');  
+        echo json_encode($response);  
+    } else {  
+        $response = ['error' => 'Internal Server Error'];  
+        header('Content-Type: application/json');  
+        header('HTTP/1.1 500 Internal Server Error');  
+        echo json_encode($response);  
+    }  
+} else {  
+    $response = ['error' => 'Function not found'];  
+    header('Content-Type: application/json');  
+    header('HTTP/1.1 404 Not Found');  
+    echo json_encode($response);  
+}  
+  
+// Funções  
+function execute_external_status($agent_user, $value) {  
+    // Executar a ação correspondente à função external_status  
+    // ...  
+    return true;  
+}  
+  
+//function execute_another_function($agent_user, $value) {  
+    // Executar a ação correspondente à função another_function  
+    // ...  
+//    return true;  
+//}  
+  
+// Adicione outras funções conforme necessário  
 
-if (isset($json['leads'])) {
-    $leads = $json['leads'];
-    foreach ($leads as $lead) {
-        $first_name = $lead['first_name'];
-        $last_name = $lead['last_name'];
-        $phone_number = $lead['phone_number'];
-        $phone_code = $lead['phone_code'];
 
-        // Verificar se o número de telefone tem o comprimento correto
-        if (strlen($phone_number) < 8 || strlen($phone_number) > 15) {
-            // Retorne um erro ou uma mensagem de erro
-            echo json_encode(array('error' => 'INVALID PHONE NUMBER LENGTH'));
-            exit;
-        }
-
-        // Processar o lead aqui
-        // ...
-    }
-} else {
-    // Código anterior para lidar com um único lead
-    $first_name = $json['first_name'];
-    $last_name = $json['last_name'];
-    $phone_number = $json['phone_number'];
-    $phone_code = $json['phone_code'];
-
-    // Adicionar lead individualmente
-    $add_lead_response = add_lead($first_name, $last_name, $phone_number, $phone_code, $campaign_id, $list_id);
-    if ($add_lead_response) {
-        echo json_encode(array('success' => 'LEAD HAS BEEN ADDED - ' . $phone_number));
-    } else {
-        echo json_encode(array('error' => 'FAILED TO ADD LEAD'));
-    }
-}
 
 #######################################################FIM####################################################################
-
 
 
 
