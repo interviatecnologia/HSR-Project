@@ -114,7 +114,7 @@
 
 $version = '2.14-75';
 $build = '230519-0731';
-$php_script = 'agente_api.php';
+$php_script = 'api.php';
 
 $startMS = microtime();
 
@@ -1746,7 +1746,7 @@ if ($function == 'audio_playback')
 				$debug_function = $debug_function_data[0];
 				$debug_options = $debug_function_data[1];
 
-				$stmtA="INSERT INTO vicidial_ajax_log set user='$agent_user',start_time='$debug_time',db_time=NOW(),run_time='$TOTALrun',php_script='agente_api.php',action='$debug_function',stage='$cd|$debug_options',last_sql='';";
+				$stmtA="INSERT INTO vicidial_ajax_log set user='$agent_user',start_time='$debug_time',db_time=NOW(),run_time='$TOTALrun',php_script='api.php',action='$debug_function',stage='$cd|$debug_options',last_sql='';";
 				$rslt=mysql_to_mysqli($stmtA, $link);
 
 				$cd++;
