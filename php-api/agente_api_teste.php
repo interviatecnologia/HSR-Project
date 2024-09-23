@@ -110,7 +110,9 @@
 # 230412-0945 - Added send_notification function
 # 230413-1957 - Fix for send_notification user group permissions
 # 230519-0731 - Fix for input variable filtering
-#
+# ############### Adjust Intervia
+# 210924-1444 - JSON and REST format
+
 
 $version = '2.14-75';
 $build = '230519-0731';
@@ -158,9 +160,6 @@ $preview = $_POST['preview'];
 $search = $_POST['search'];
 $value = $_POST['value'];
 
-
-
-
 // Depois
 $json = json_decode(file_get_contents('php://input'), true);
 $source = $json['source'];
@@ -190,9 +189,9 @@ if ($response !== null) {
  }
 
 
-#######################################################FIM####################################################################
+#######################################################FIM - ALTERAÇÃO JSON####################################################################
 
-#######################################################JSON -RESTFULL###################################################################
+#######################################################JSON - RESTFULL###################################################################
 
  
 
@@ -236,7 +235,7 @@ $functions = array(
   
 // Executar a ação correspondente à função solicitada  
 if (isset($functions[$function])) {  
-    $result = $functions$function;  
+    $result = $function;  
     if ($result) {  
         $response = ['result' => 'SUCCESS', 'result_reason' => $function . ' function set'];  
         header('Content-Type: application/json');  
@@ -272,7 +271,7 @@ function execute_external_status($agent_user, $value) {
 
 
 
-#######################################################FIM####################################################################
+#######################################################FIM - JSON - RESTFULL####################################################################
 
 
 

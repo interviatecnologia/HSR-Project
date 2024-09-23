@@ -23,6 +23,139 @@ if ($function == 'version') {
 ### END - version
 ################################################################################
 
+######################ADJUST INTERVIA - RESTFULL+JSON##########################
+##############################################################################
+### BEGIN - external_status - set the dispo code or status for a call and move on
+################################################################################
+
+
+if ($function == 'external_status') {
+    // VALIDAR DADOS
+    // Verifica se os dados de entrada são válidos
+    if ((strlen($value) < 1) || ((strlen($agent_user) < 1) && (strlen($alt_user) < 2))) {
+        // RESPOSTA DE ERRO
+        // Retorna uma resposta de erro em formato JSON
+        $response = array(
+            'result' => _QXZ("ERROR"),
+            'result_reason' => _QXZ("external_status not valid"),
+            'details' => array(
+                'value' => $value,
+                'agent_user' => $agent_user,
+                'alt_user' => $alt_user
+            )
+        );
+        header('Content-Type: application/json');
+        header('HTTP/1.1 400 Bad Request');
+        echo json_encode($response);
+        // REGISTRO DE LOG
+        // Registra o erro no log
+        api_log($link, $api_logging, $api_script, $user, $agent_user, $function, $value, $response['result'], $response['result_reason'], $source, $data);
+    } else {
+        // VERIFICAR PERMISSÃO
+        // Verifica se o usuário tem permissão para executar a função
+        if ((!preg_match("/ $function /", $VUapi_allowed_functions)) && (!preg_match("/ALL_FUNCTIONS/", $VUapi_allowed_functions))) {
+            // RESPOSTA DE ERRO
+            // Retorna uma resposta de erro em formato JSON
+            $response = array(
+                'result' => _QXZ("ERROR"),
+                'result_reason' => _QXZ("auth USER DOES NOT HAVE PERMISSION TO USE THIS FUNCTION"),
+                'details' => array(
+                    'user' => $user,
+                    'function' => $function,
+                    'VUuser_group' => $VUuser_group
+                )
+            );
+            header('Content-Type: application/json');
+            header('HTTP/1.1 403 Forbidden');
+            echo json_encode($response);
+            // REGISTRO DE LOG
+            // Registra o erro no log
+            api_log($link, $api_logging, $api_script, $user, $agent_user, $function, $value, $response['result'], $response['result_reason'], $source, $data);
+            exit;
+        }
+        // VERIFICAR USUÁRIO
+        // Verifica se o usuário existe
+        if (strlen($alt_user) > 1) {
+            $stmt = "SELECT count(*) FROM vicidial_users WHERE custom_three='$alt_user';";
+            if ($DB) {echo "$stmt\n";}
+            $rslt = mysql_to_mysqli($stmt, $link);
+            $row = mysqli_fetch_row($rslt);
+            if ($row[0] > 0) {
+                $stmt = "SELECT user FROM vicidial_users WHERE custom_three='$alt_user' ORDER BY user;";
+                if ($DB) {echo "$stmt\n";}
+                $rslt = mysql_to_mysqli($stmt, $link);
+                $row = mysqli_fetch_row($rslt);
+                $agent_user = $row[0];
+            } else {
+                // RESPOSTA DE ERRO
+                // Retorna uma resposta de erro em formato JSON
+                $response = array(
+                    'result' => _QXZ("ERROR"),
+                    'result_reason' => _QXZ("no user found"),
+                    'details' => array(
+                        'alt_user' => $alt_user
+                    )
+                );
+                header('Content-Type: application/json');
+                header('HTTP/1.1 404 Not Found');
+                echo json_encode($response);
+                // REGISTRO DE LOG
+                // Registra o erro no log
+                api_log($link, $api_logging, $api_script, $user, $agent_user, $function, $value, $response['result'], $response['result_reason'], $source, $data);
+            }
+        }
+        // VERIFICAR AGENTE
+        // Verifica se o agente está logado
+        $stmt = "SELECT count(*) FROM vicidial_live_agents WHERE user='$agent_user';";
+        if ($DB) {echo "$stmt\n";}
+        $rslt = mysql_to_mysqli($stmt, $link);
+        $row = mysqli_fetch_row($rslt);
+        if ($row[0] > 0) {
+            // ATUALIZAR AGENTE
+            // Atualiza o agente com o valor de external_status
+            $stmt = "UPDATE vicidial_live_agents SET external_status='$value' WHERE user='$agent_user';";
+            if ($format == 'debug') {echo "\n<!-- $stmt -->";}
+            $rslt = mysql_to_mysqli($stmt, $link);
+            // RESPOSTA DE SUCESSO
+            // Retorna uma resposta de sucesso em formato JSON
+            $response = array(
+                'result' => _QXZ("SUCCESS"),
+                'result_reason' => _QXZ("external_status function set"),
+                'details' => array(
+                    'value' => $value,
+                    'agent_user' => $agent_user
+                )
+            );
+            header('Content-Type: application/json');
+            header('HTTP/1.1 200 OK');
+            echo json_encode($response);
+            // REGISTRO DE LOG
+            // Registra o sucesso no log
+            api_log($link, $api_logging, $api_script, $user, $agent_user, $function, $value, $response['result'], $response['result_reason'], $source, $data);
+        } else {
+            // RESPOSTA DE ERRO
+            // Retorna uma resposta de erro em formato JSON
+            $response = array(
+                'result' => _QXZ("ERROR"),
+                'result_reason' => _QXZ("agent_user is not logged in"),
+                'details' => array(
+                    'agent_user' => $agent_user
+                )
+            );
+            header('Content-Type: application/json');
+            header('HTTP/1.1 400 Bad Request');
+            echo json_encode($response);
+            // REGISTRO DE LOG
+            // Registra o erro no log
+            api_log($link, $api_logging, $api_script, $user, $agent_user, $function, $value, $response['result'], $response['result_reason'], $source, $data);
+        }
+    }
+}
+
+##############################################################################
+### FINAL - external_status 
+################################################################################
+
 
 ######################ADJUST INTERVIA - RESTFULL+JSON##########################
 ###############################################################################
@@ -698,7 +831,9 @@ if ($function == 'external_add_lead') {
      'result_reason' => _QXZ("external_add_lead function set"),  
      'details' => array(  
        'value' => $value,  
-       'agent_user' => $agent_user  
+       'agent_user' => $agent_user,
+       'campaign_id' => $campaign_id,
+       'list_id' => $list_id  
      )  
   );  
   header('Content-Type: application/json');  
