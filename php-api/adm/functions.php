@@ -1205,6 +1205,5 @@ if ($callback == 'Y') {
        'data' => "$phone_number|$list_id|$stmt"  
     ]);  
     api_log($link, $api_logging, $api_script, $user, $agent_user, $function, $value, 'ERROR', "add_lead LEAD HAS NOT BEEN ADDED", $source, "$phone_number|$list_id|$stmt");  
- }
-
- ?>
+}
+?>
