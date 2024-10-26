@@ -11,8 +11,9 @@ use App\Http\Controllers\AudioController;
 use App\Http\Controllers\BlacklistController;
 use App\Http\Controllers\HolidayScheduleController;
 use App\Http\Controllers\DialerController;
-use App\Http\Controllers\DialerController2;
+use App\Http\Controllers\CampaignController;
 
+use App\Http\Controllers\DialerController2;
 use App\Http\Controllers\Agent\DillerController;
 
 
@@ -46,19 +47,6 @@ Route::middleware('suport.bearer.token')->group(function () {
 });
 
 //Route::middleware('auth.api')->group(function () {
-
-    Route::prefix('diller')->group(function () {
-        Route::controller(DillerController::class)->group(function () {
-            Route::post('/pause', 'pause');
-            Route::post('/unpause', 'unpause');
-            Route::post('/dial', 'dial');
-            Route::post('/hangup', 'hangup');
-            Route::get('/status', 'status');
-        });
-    });
-//});
-
-//Route::middleware('auth.api')->group(function () {
     Route::prefix('dialer')->group(function () {
         Route::controller(DialerController::class)->group(function () {
             Route::post('/', 'store'); // Adicionar Agente:
@@ -88,6 +76,18 @@ Route::middleware('suport.bearer.token')->group(function () {
         });
     });
 
+
+//Route::middleware('auth.api:8')->group(function () {
+    
+Route::prefix('campaign')->group(function () {
+    Route::controller(CampaignController::class)->group(function () {
+        Route::get('/', 'index');
+        Route::post('/', 'post');
+        Route::get('/{id}', 'get');
+        Route::put('/{id}', 'put');
+        Route::delete('/{id}', 'delete');
+    });
+});
 
 //Route::middleware('auth.api:8')->group(function () {
     
