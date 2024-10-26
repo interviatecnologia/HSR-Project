@@ -1,0 +1,2821 @@
+
+DOCUMENTO DE API NÃO AGENTE Iniciado: 2008-07-24 Atualizado: 2024-08-24
+
+Este documento descreve as funções de uma API (Programação de Aplicativos).
+Interface) para todas as funções NÃO diretamente relacionadas à tela do Agente VICIDIAL.
+Esta funcionalidade será bastante limitada no início e será desenvolvida à medida que
+funções críticas são identificadas e programadas nele.
+
+Há também um script de API do agente, para mais informações sobre isso, leia
+o documento AGENT_API.txt.
+
+OBSERVAÇÃO: A API pode usar HTTPS se o seu servidor web estiver configurado para usar HTTPS.
+	Por exemplo, todas as contas VICIhost podem usar HTTPS para funções de API
+
+
+Funções da API:
+versão - mostra a versão e a compilação da API, juntamente com a data/hora
+sounds_list - gera uma lista de arquivos de áudio do armazenamento de áudio
+moh_list - gera uma lista de músicas em classes de espera no sistema
+vm_list - exibe uma lista de caixas de correio de voz no sistema
+blind_monitor - chama telefones definidos pelo usuário e os coloca em sessão como monitor cego
+add_lead - adiciona um novo lead à tabela vicidial_list com vários campos e opções
+update_lead - atualiza informações de leads em vicidial_list e tabela personalizada associada
+batch_update_lead - atualiza vários leads em vicidial_list com um único conjunto de valores de campo (opções de campo limitadas)
+agent_ingroup_info - mostra informações de discagem automática de grupo e de saída para o agente conectado
+recording_lookup - procura gravações com base no usuário e na data ou lead_id
+did_log_export - exporta todas as chamadas de entrada para um DID por um dia
+agent_stats_export - exporta estatísticas do agente para um período de tempo definido
+add_user - adiciona um usuário ao sistema
+update_user - atualiza algumas configurações do usuário no sistema
+copy_user - copia um usuário existente no sistema para um novo ID de usuário e nome
+add_phone - adiciona um telefone ao sistema
+update_phone - atualiza ou exclui um registro telefônico existente no sistema
+add_phone_alias - adiciona um registro de alias de telefone ao sistema
+update_phone_alias - atualiza ou exclui um registro de alias de telefone existente no sistema
+add_list - adiciona uma lista ao sistema
+update_list - atualiza as configurações da lista no sistema, redefine os leads na lista, exclui a lista
+list_info - informações resumidas sobre uma lista
+list_custom_fields - mostra os campos personalizados que estão em uma lista ou todas as listas
+add_group_alias - adiciona alias de grupo ao sistema
+user_group_status - status em tempo real de um ou mais grupos de usuários
+in_group_status - status em tempo real de um ou mais grupos
+agent_status - status em tempo real de um usuário
+callid_info - informações sobre uma chamada com base no caller_code ou ID da chamada
+lead_field_info - extrai o valor de um campo de um lead
+lead_callback_info - gera dados de retorno de chamada agendados para um lead específico
+lead_all_info - exibe todos os dados de um lead (opcionalmente incluindo campos personalizados)
+lead_status_search - exibe todos os valores de campo de todos os leads que correspondem ao status e à data da chamada na solicitação
+lead_search - pesquisa leads na tabela vicidial_list por números de telefone
+ccc_lead_info - gera dados de lead para chamada de comunicação entre clusters
+server_refresh - força uma atualização do arquivo conf em todos os servidores telco no cluster
+check_phone_number - permite que você verifique se um número de telefone é válido e discável
+logged_in_agents - lista de agentes que estão logados no sistema
+update_campaign - atualiza as configurações da campanha no sistema
+add_did - adiciona novas entradas DID de entrada ao sistema
+copy_did - adiciona novas entradas DID de entrada ao sistema, copiadas de uma entrada DID existente
+update_did - atualiza informações de DID de entrada no sistema
+phone_number_log - exporta lista de chamadas feitas para um ou mais números de telefone
+call_status_stats - relatório sobre o número de chamadas feitas por campanha e grupo interno, com detalhamento por hora e status
+call_dispo_report - relatório de detalhamento de disposição de chamadas
+agent_campaigns - procura campanhas/grupos permitidos para um usuário específico
+update_cid_group_entry - atualiza entradas do grupo CID
+add_dnc_phone - adiciona um número de telefone a uma das listas DNC
+delete_dnc_phone - remove um número de telefone de uma das listas DNC
+add_fpg_phone - adiciona um número de telefone a um grupo de telefone de filtro
+delete_fpg_phone - remove um número de telefone de um grupo de telefones de filtro
+campaigns_list - exibe informações sobre todas as campanhas no sistema
+hopper_list - exibe informações sobre leads no hopper para uma campanha
+update_alt_url - atualiza/adiciona/exibe entradas de URL de chamada de dispo alternativas para uma campanha
+update_presets - atualiza/adiciona/exibe/exclui entradas de predefinições de campanha
+lead_dearchive - move um lead do arquivo para a tabela de leads ativos
+update_remote_agent - atualiza algumas configurações do agente remoto no sistema
+user_details - exibe informações sobre um usuário
+
+
+Novos scripts:
+/vicidial/non_agent_api.php - o script que é acessado para executar comandos
+
+
+Mudanças:
+80724-1723 - Primeira construção
+90428-0208 - Função blind_monitor adicionada
+90513-1720 - Função sounds_list adicionada
+90721-1432 - Adicionado posto e proprietário
+90904-1535 - Adicionada a função moh_list musiconhold
+90916-2342 - Adicionada lista de correio de voz vm_list
+91203-1140 - Adicionado recurso agent_ingroup_info
+91216-0331 - Adicionados recursos de verificação de duplicação à função add_lead
+100118-0543 - Adicionados novos esquemas de DST da Austrália e da Nova Zelândia (FSO-FSA e LSS-FSA)
+100704-1148 - Adicionados campos personalizados de inserções à função add_lead
+100718-0245 - Função update_lead adicionada para atualizar leads existentes
+100723-1333 - Adicionada a opção no_update à função update_lead
+100728-1952 - Adicionada a opção delete_lead à função update_lead
+100924-1403 - Adicionado called_count como uma opção update_lead
+101111-1536 - Adicionado vicidial_hopper.source às inserções vicidial_hopper
+101117-1104 - Adicionado retorno de chamada e exclusão de entrada de campo personalizado para a opção delete_lead
+101206-2126 - Adicionadas funções recording_lookup e did_log_export
+110127-2245 - Adicionadas funções add_user e add_phone
+110306-1044 - Adicionadas funções add_list e update_list
+110316-2035 - Adicionada variável reset_time e pesquisa de dup NAMEPHONE
+110404-1356 - Adicionado parâmetro de pesquisa uniqueid à função recording_lookup
+110409-0822 - Adicionado registro de tempo de execução de funções de API
+110424-0854 - Adicionada opção para pesquisas de código de fuso horário usando o campo proprietário na função add_lead
+110529-1220 - Adicionada saída de informações de fuso horário para função de versão
+110614-0726 - Adicionada a opção reset_lead à função update_lead (problema nº 502)
+110705-1928 - Adicionadas opções para prefixo USACAN de 4º dígito (sem 0 ou 1) e filtragem de código de área válido para add_lead
+110821-2318 - Adicionadas funções update_phone, add_phone_alias, update_phone_alias
+110928-2110 - Adicionadas opções de retorno de chamada para add_lead e update_lead
+111106-0959 - Adicionadas restrições de user_group a algumas funções
+120127-1331 - Pequena correção para substituição de mais em strings de campos personalizados para funções add/update_lead
+120210-1215 - Pequena alteração para hopper adicionando vendor_lead_code
+120213-1613 - Adicionado registro opcional de todas as solicitações não-admin.php, habilitado em options.php
+120326-1307 - Função agent_stats_export adicionada
+120810-0859 - Função add_group_alias adicionada, função agent_stats_export alterada
+120912-2042 - Adicionadas funções user_group_status e in_group_status
+120913-1255 - Função update_log_entry adicionada
+121116-1938 - Adicionadas restrições de tempo de chamada de estado para a função de inserção do funil add_lead
+121125-2210 - Adicionada outra opção DNC de campanha e opção de data de expiração de lista
+130328-0949 - Adicionada a opção update_phone_number à função update_lead
+130405-1538 - Função agent_status adicionada
+130420-1938 - Adicionadas opções de validação de prefixo NANPA e fuso horário
+130614-0907 - Código de pausa adicionado à saída da função agent_status
+130617-2232 - Adicionados substatus em tempo real à saída da função agent_status
+140124-1057 - Função callid_info adicionada
+140206-1205 - Função update_user adicionada
+140211-1056 - Função server_refresh adicionada
+140214-1540 - Função check_phone_number adicionada
+140331-2119 - Cálculos de divisão convertidos para usar a função MathZDC
+140403-2024 - Adicionada a opção camp_rg_only à função update_user
+140418-1553 - Adicionado preview_lead_id para agent_status
+140617-2029 - Adicionada opção vicidial_users wrapup_seconds_override
+140812-0939 - Adicionado phone_number e vendor_lead_code à saída da função agent_status
+150123-1611 - Problema corrigido com lista de horários de chamadas locais e add_lead
+150217-1404 - arquivar callbacks excluídos na tabela vicidial_callbacks_archive
+150309-0250 - Adicionada a capacidade de usar endereços de formulários da web codificados por URL
+150313-0818 - Permitir aspas simples em vicidial_list e campos de dados personalizados
+150428-1720 - Adicionado web_form_address_three às funções add_list/update_list
+150430-0644 - Adicionadas restrições de função permitidas pela API e restrições de lista permitida
+150512-2028 - Adicionada filtragem de sinal de hash em algumas variáveis ​​de entrada, Problema nº 851
+150603-1528 - Problema de formato corrigido em recording_lookup
+150730-2022 - Adicionada opção para definir entry_list_id
+150804-0948 - Adicionada opção WHISPER para função blind_monitor
+150808-1438 - Adicionada compatibilidade para opção de dados de campos personalizados
+151226-0954 - Adicionado campo session_id(conf_exten) à saída de agent_status e adicionada função logged_in_agents
+160603-1041 - Função update_campaign adicionada
+160709-2219 - Função lead_field_info adicionada
+161020-1042 - Adicionada opção lookup_state para add_lead, adicionada validação de 10 dígitos se usacan_areacode_check estiver habilitado
+170204-0947 - Função phone_number_log adicionada
+170209-1149 - Adicionado registro de URL e IP
+170219-1520 - Adicionada opção de cheque duplicado de 90 dias
+170223-0743 - Adicionada tradução QXZ ao texto de funções do usuário da web do administrador
+170301-1649 - Adicionada validação de que o diretório da web de sons existe para a função sounds_list
+170409-1603 - Adicionado código de validação da lista de IP
+170423-0800 - Adicionada opção force_entry_list_id para update_lead
+170508-1048 - Adicionado registro blind_monitor
+170527-2254 - Correção para problema raro de registro de entrada #1017
+170601-0747 - Adicionadas opções add_to_hopper à função update_lead
+170609-1107 - Função ccc_lead_info adicionada
+170615-0006 - Adicionado status DIAL para chamadas de agentes de discagem manual que não foram atendidas, para 4 funções
+171229-1602 - Adicionada função lead_status_search
+180109-1313 - Função call_status_stats adicionada
+180208-1655 - Função call_dispo_report adicionada
+180331-1716 - Adicionadas opções para update_campaign, add_user, update_phone. Adicionada função update_did
+180916-1059 - Adicionada verificação para limite de redefinição de lista diária
+181214-1606 - Função lead_callback_info adicionada
+190325-1055 - Função agent_campaigns adicionada
+190628-1504 - Função update_cid_group_entry adicionada
+190703-0858 - Adicionada a opção custom_fields_copy à função add_list
+190930-1629 - Adicionado campo list_description às funções add_list e update_list
+191107-1143 - Função list_info adicionada
+191113-1758 - Adicionadas funções add_dnc_phone e add_fpg_phone
+191114-1637 - Adicionada a opção remove_from_hopper à função update_lead
+200331-1207 - Função list_custom_fields adicionada
+200418-0837 - Adicionada a opção custom_copy_method para a função add_list
+200606-0938 - Adicionadas mais configurações para add_list e update_list
+200610-1447 - Opção de duração adicionada à função recording_lookup
+200622-1609 - Adicionadas mais opções para as funções add_phone e update_phone
+200815-1025 - Adicionadas funções campaigns_list e hopper_list
+200824-2330 - Adicionada opção BLOCK search_method para função hopper_list
+201002-1545 - Extensão adicionada como opção recording_lookup, permitida para configuração secure sounds_web_server
+201106-1654 - Adicionada a opção campaign_id à função agent_stats_export
+201113-0713 - Adicionada a opção delete_did à função update_did
+201201-1625 - Adicionada a opção group_by_campaign à função agent_stats_export
+210113-1714 - Função copy_user adicionada
+210209-2014 - Função add_did adicionada
+210210-1627 - Adicionada verificação de duplicatas com mais opções de X-day para a função add_lead
+210216-1415 - Adicionada opção list_exists_check para função add_lead
+210217-1454 - Adicionada opção menu_id para funções add_did e update_did
+210227-1116 - Adicionadas opções numéricas xferconf para funções update_campaign, add_list e update_list
+210303-1802 - Adicionada opção list_exists_check para função update_lead
+210316-2207 - Função lead_all_info adicionada
+210319-1720 - Adicionada opção de valor especial 'xDAYS' para callback_datetime
+210320-2127 - Adicionada a opção 'custom_fields_add' para a função update_list
+210322-1218 - Adicionada exibição de formatos de arquivo wav inválidos na função sounds_list
+210325-2042 - Adicionados mais campos de saída de dados à função agent_stats_export
+210330-1633 - Adicionada a capacidade de usar custom_fields_copy em update_list em um list_id excluído
+210401-1058 - Adicionada a opção 'custom_fields_update' para a função update_list
+210402-1102 - Adicionada a opção 'custom_fields_delete' para a função update_list
+210406-1047 - Adicionada a opção 'dialable_count' à função list_info
+210517-1850 - Adicionado phone_code como campo modificável na função update_lead
+210611-1610 - Adicionadas mais variáveis ​​para funções add_did/update_did
+210618-1000 - Adicionado suporte CORS
+210625-1421 - Adicionada opção BARGESWAP à função blind_monitor
+210701-2050 - Adicionadas opções ingroup_rank/ingroup_grade à função update_user
+210812-2640 - Adicionada atualização de registros de agentes ativos para ingroup_rank/ingroup_grade na função update_user
+210917-1615 - Função batch_update_lead adicionada
+211107-1556 - Adicionada pesquisa opcional de número de telefone para a função lead_all_info
+211118-1946 - Adicionada a configuração 'delete_cf_data' à função update_lead
+220126-2116 - Adicionadas opções dispo_call_url e alt URL para update_campaign. Adicionada função 'update_alt_url'
+220307-0937 - Função 'update_presets' adicionada
+220310-0825 - Adicionada ação DELETE à função 'update_presets'
+220902-0823 - Adicionadas opções dial_status_add/dial_status_remove à função update_campaign
+220920-0814 - Adicionadas mais opções "XDAY" para verificações de duplicatas add_lead
+221108-1849 - Opção include_ip adicionada para função agent_status
+230122-1821 - Adicionada a opção reset_password à função update_user
+230308-1758 - Correção para problema de atualização de número de telefone de lista de leads-restrict
+230614-0828 - Função container_list adicionada
+230721-1753 - Inserção adicionada para monitoramento diário de RT
+231109-0933 - Adicionada opção archived_lead para múltiplas funções
+231109-2022 - Adicionada função lead_dearchive
+240101-0920 - Adicionadas opções DUPPHONEALT... para duplicate_check dentro da função add_lead
+240105-1009 - Função delete_fpg_phone adicionada
+240120-0840 - Adicionados campos opcionais list_order,list_order_randomize,list_order_secondary à função update_campaign
+240217-0907 - Adicionados mais campos vicidial_users ausentes da função de cópia
+240302-0804 - Função delete_dnc_phone adicionada
+240703-1657 - Função update_remote_agent adicionada
+240718-0942 - Correções para inconsistências na documentação e permissões para algumas funções
+240718-1716 - Campos adicionados à saída da função campaigns_list
+240730-1832 - Alterações para compatibilidade com PHP8, função copy_did adicionada
+240824-1626 - Função user_details adicionada
+
+
+As funções da API usam a variável 'function'
+
+NOTA: Assim como a API do agente, a API sem agente requer o usuário e a senha de um
+conta vicidial_users com API válida para executar ações.
+
+Exemplo de resposta se as permissões do usuário não autorizarem a função tentada:
+ERRO: O USUÁRIO auth NÃO TEM PERMISSÃO PARA USAR ESTA FUNÇÃO - 6666|add_lead
+
+
+
+-------------------------------------------------- ------------------------------
+versão - mostra a versão e a compilação da API, juntamente com a data/hora e o fuso horário
+
+Exemplo de sequências de URL para chamadas de API:
+http://server/vicidial/non_agent_api.php?function=versão
+
+Respostas de exemplo:
+VERSÃO: 2.4-34|BUILD: 110424-0854|DATA: 2011-05-29 12:19:22|ÉPOCA: 1306685962|DST: 1|TZ: -5|TZNOW: -4|
+
+
+
+
+
+-------------------------------------------------- ------------------------------
+sounds_list - gera uma lista de arquivos de áudio do armazenamento de áudio
+
+NOTA: o usuário da API para esta função deve ter o user_level definido como 7 ou superior
+
+CAMPOS OPCIONAIS-
+formato - formato da saída (guia, link, quadro de seleção)
+estágio - como classificar a saída (data, tamanho, nome)
+comentários - nome do campo a ser preenchido
+
+
+Exemplo de sequências de URL para chamadas de API:
+http://server/vicidial/non_agent_api.php?source=test&user=6666&pass=1234&function=sounds_list&format=selectframe&comments=fieldname&stage=date
+
+Respostas de exemplo:
+<o sucesso é inferido pela saída da lista de arquivos de áudio>
+
+ERRO: sounds_list O USUÁRIO NÃO TEM PERMISSÃO PARA VER A LISTA DE SONS
+ERRO: o diretório da web da loja de áudio não existe: |6666|sounds_list|/srv/www/htdocs/1234|
+ERRO: sounds_list O CONTROLE DE SOM CENTRAL NÃO ESTÁ ATIVO
+
+
+
+
+
+-------------------------------------------------- ------------------------------
+moh_list - gera uma lista de músicas em classes de espera no sistema
+
+NOTA: o usuário da API para esta função deve ter o user_level definido como 7 ou superior
+
+CAMPOS OPCIONAIS-
+formato - formato da saída (apenas 'selectframe' funciona)
+comentários - nome do campo a ser preenchido
+
+
+Exemplo de sequências de URL para chamadas de API:
+http://server/vicidial/non_agent_api.php?source=test&user=6666&pass=1234&function=moh_list&format=selectframe&comments=fieldname&stage=date
+
+Respostas de exemplo:
+<o sucesso é inferido pela saída da lista de classes moh>
+
+ERRO: moh_list O USUÁRIO NÃO TEM PERMISSÃO PARA VER A LISTA DE SONS
+
+ERRO: moh_list O CONTROLE DE SOM CENTRAL NÃO ESTÁ ATIVO
+
+
+
+
+
+-------------------------------------------------- ------------------------------
+vm_list - exibe uma lista de caixas de correio de voz no sistema
+
+NOTA: o usuário da API para esta função deve ter o user_level definido como 7 ou superior
+
+CAMPOS OPCIONAIS-
+formato - formato da saída (apenas 'selectframe' funciona)
+comentários - nome do campo a ser preenchido
+
+
+Exemplo de sequências de URL para chamadas de API:
+http://server/vicidial/non_agent_api.php?source=test&user=6666&pass=1234&function=vm_list&format=selectframe&comments=fieldname&stage=date
+
+Respostas de exemplo:
+<o sucesso é inferido pela saída da lista de caixas de correio de voz>
+
+ERRO: O USUÁRIO vm_list NÃO TEM PERMISSÃO PARA VER A LISTA DE CAIXAS DE CORREIO DE VOZ
+
+ERRO: vm_list CONTROLE DE SOM CENTRAL NÃO ESTÁ ATIVO
+
+
+
+
+
+-------------------------------------------------- ------------------------------
+blind_monitor - chama telefones definidos pelo usuário e os coloca em sessão como monitor cego
+
+NOTA: o usuário da API para esta função deve ter o user_level definido como 7 ou superior
+
+CAMPOS OBRIGATÓRIOS-
+phone_login - alfanumérico, sem espaços ou caracteres especiais permitidos
+session_id - deve ser todo número, 7 dígitos
+server_ip - deve ser composto apenas por números e pontos, máximo de 15 caracteres
+fonte - descrição do que originou a chamada da API (máximo de 20 caracteres)
+estágio - MONITOR, BARGE (ou BARGESWAP) ou HIJACK, o padrão é MONITOR
+			 (A opção HIJACK não está funcional no momento)
+
+
+Exemplo de sequências de URL para chamadas de API:
+http://server/vicidial/non_agent_api.php?source=test&user=6666&pass=1234&function=blind_monitor&phone_login=350a&session_id=8600051&server_ip=10.10.10.16&stage=MONITOR
+
+Respostas de exemplo:
+SUCESSO: blind_monitor FOI LANÇADO - 350a|010*010*010*017*350|8600051
+
+ERRO: blind_monitor LOGIN DE TELEFONE INVÁLIDO - 350q
+
+ERRO: blind_monitor ID DE SESSÃO INVÁLIDO - 8602051
+
+ERRO: O USUÁRIO DO BLIND_MONITOR NÃO TEM PERMISSÃO PARA O BLIND MONITOR - 6666|0
+
+ERRO: NENHUMA FUNÇÃO ESPECIFICADA
+
+
+
+
+
+-------------------------------------------------- ------------------------------
+agent_ingroup_info - mostra informações de discagem automática de grupo e de saída para o agente conectado
+
+NOTA: o usuário da API para esta função deve ter o user_level definido como 7 ou superior
+
+CAMPOS OBRIGATÓRIOS-
+agent_user - 2-20 caracteres
+fonte - descrição do que originou a chamada da API (máximo de 20 caracteres)
+
+CAMPOS DE CONFIGURAÇÕES-
+stage - info (mostrar apenas informações), change (mostrar opções para alterar), text (saída padrão não HTML)
+
+Exemplo de sequências de URL para chamadas de API:
+http://server/vicidial/non_agent_api.php?source=test&function=agent_ingroup_info&stage=change&user=6666&pass=1234&agent_user=1000
+
+Respostas de exemplo:
+ERRO: agent_ingroup_info O USUÁRIO NÃO TEM PERMISSÃO PARA OBTER INFORMAÇÕES DO AGENTE - 6666|0
+ERRO: agent_ingroup_info ID DE USUÁRIO INVÁLIDO - 1255|6666
+
+
+
+
+
+-------------------------------------------------- ------------------------------
+agent_campaigns - procura campanhas/grupos permitidos para um usuário específico
+
+NOTA: o usuário da API para esta função deve ter o user_level definido como 8 ou superior e "visualizar relatórios" e "modificar usuários" habilitados
+
+CAMPOS OBRIGATÓRIOS-
+agent_user - 2-20 caracteres
+fonte - descrição do que originou a chamada da API (máximo de 20 caracteres)
+
+CAMPOS OPCIONAIS-
+campaign_id - 2-8 caracteres
+ignore_agentdirect - S ou N, o padrão é N. Excluir AGENTDIRECT em grupos dos resultados ou não
+
+CAMPOS DE CONFIGURAÇÕES-
+stage - o formato dos dados exportados: csv, tab, pipe (padrão)
+cabeçalho - incluir um cabeçalho (SIM) ou não (NÃO). Isso é opcional, o padrão é não incluir um cabeçalho
+
+Exemplo de sequências de URL para chamadas de API:
+http://server/vicidial/non_agent_api.php?source=test&function=agent_campaigns&user=6666&pass=1234&agent_user=1000
+http://server/vicidial/non_agent_api.php?source=test&function=agent_campaigns&campaign_id=TESTCAMP&ignore_agentdirect=Y&user=6666&pass=1234&agent_user=1000&stage=csv
+
+Respostas de exemplo:
+ERRO: agent_campaigns O USUÁRIO NÃO TEM PERMISSÃO PARA OBTER INFORMAÇÕES DO AGENTE - 6666|0
+ERRO: agent_campaigns ID DE USUÁRIO INVÁLIDO - 1255|6666
+ERRO: agent_campaigns USUÁRIO DO AGENTE NÃO EXISTE - 1000|6666
+ERRO: agent_campaigns ESTE USUÁRIO AGENTE NÃO TEM CAMPANHAS DISPONÍVEIS - 1000|6666
+
+Uma resposta SUCCESS não mostrará "SUCCESS", mas apenas imprimirá os resultados no seguinte formato:
+usuário|lista_de_campanhas_permitidas|lista_de_grupos_permitidos
+1000|TESTCAMP-TESTE123-TESTE987|TESTE_EM-TESTE_EM2-TESTE_EM3-TESTE_EM4-LINHA_DE_VENDAS
+
+
+
+
+
+-------------------------------------------------- ------------------------------
+campaigns_list - exibe informações sobre todas as campanhas no sistema
+
+NOTA: o usuário da API para esta função deve ter o user_level definido como 8 ou superior e "visualizar relatórios" habilitado
+
+CAMPOS OBRIGATÓRIOS-
+fonte - descrição do que originou a chamada da API (máximo de 20 caracteres)
+
+CAMPOS OPCIONAIS-
+campaign_id - 2 a 8 caracteres, para todas as campanhas, deixe em branco
+
+CAMPOS DE CONFIGURAÇÕES-
+stage - o formato dos dados exportados: csv, tab, pipe (padrão)
+cabeçalho - incluir um cabeçalho (SIM) ou não (NÃO). Isso é opcional, o padrão é não incluir um cabeçalho
+
+Exemplo de sequências de URL para chamadas de API:
+http://server/vicidial/non_agent_api.php?source=test&function=campaigns_list&user=6666&pass=1234
+http://server/vicidial/non_agent_api.php?source=test&function=lista_de_campanhas&id_de_campanha=TESTCAMP&user=6666&pass=1234&stage=csv
+
+Respostas de exemplo:
+ERRO: campaigns_list O USUÁRIO NÃO TEM PERMISSÃO PARA OBTER INFORMAÇÕES DA CAMPANHA - 6666|0
+ERRO: campaigns_list ESTE USUÁRIO NÃO TEM CAMPANHAS VISÍVEIS - 6666
+
+Uma resposta SUCCESS não mostrará "SUCCESS", mas apenas imprimirá os resultados no seguinte formato:
+id_da_campanha|nome_da_campanha|ativo|grupo_de_usuários|método_de_discagem|nível_de_discagem|ordem_de_lead|status_de_discagem|tempo_limite_de_discagem|prefixo_de_discagem|prefixo_de_discagem_manual|prefixo_de_discagem_de_três_vias
+TESTCAMP|Campanha de teste|Y|---ALL---|INBOUND_MAN|1|DOWN|PDROP DROP B NOVO|65|9|9|9
+
+
+
+
+
+-------------------------------------------------- ------------------------------
+hopper_list - exibe informações sobre leads no hopper para uma campanha
+
+NOTA: o usuário da API para esta função deve ter o user_level definido como 8 ou superior e "visualizar relatórios" habilitado
+
+CAMPOS OBRIGATÓRIOS-
+fonte - descrição do que originou a chamada da API (máximo de 20 caracteres)
+campaign_id - 2-8 caracteres
+
+CAMPOS DE CONFIGURAÇÕES-
+stage - o formato dos dados exportados: csv, tab, pipe (padrão)
+cabeçalho - incluir um cabeçalho (SIM) ou não (NÃO). Isso é opcional, o padrão é não incluir um cabeçalho
+
+CAMPOS OPCIONAIS-
+search_method - para consultas SQL mais rápidas, mas bloqueadoras, que podem afetar o desempenho do banco de dados, defina como BLOCK
+
+Exemplo de sequências de URL para chamadas de API:
+http://server/vicidial/non_agent_api.php?source=test&function=hopper_list&campaign_id=TESTCAMP&user=6666&pass=1234&stage=csv
+
+Respostas de exemplo:
+ERRO: hopper_list O USUÁRIO NÃO TEM PERMISSÃO PARA OBTER INFORMAÇÕES DA CAMPANHA - 6666|0
+ERRO: hopper_list ESTA CAMPANHA NÃO EXISTE - 6666|TESTCAMP
+ERRO: hopper_list NÃO HÁ LEADS NO HOPPER PARA ESTA CAMPANHA - 6666|TESTCAMP
+
+Uma resposta SUCCESS não mostrará "SUCCESS", mas apenas imprimirá os resultados no seguinte formato:
+ordem_do_funil, prioridade, id_do_lead, id_da_lista, número_de_telefone, código_do_telefone, estado, status, contagem, deslocamento_de_GMT, classificação, alt, origem_do_funil, código_do_lead_do_fornecedor, id_da_fonte, dias_de_idade, hora_da_última_chamada
+0,0,796292,107,9999001095,1,NY,PDROP,7,-4.00,0,,S,1001095,A321,2681,1 ANOS
+1,0,796295,107,9999001098,1,NY,PDROP,2,-4.00,0,,S,1001098,A322,2681,3 ANOS
+
+
+
+
+
+-------------------------------------------------- ------------------------------
+recording_lookup - procura gravações com base no usuário e na data ou lead_id
+
+NOTA: o usuário da API para esta função deve ter o user_level definido como 7 ou superior e "visualizar relatórios" habilitado
+
+CAMPOS DE PESQUISA-
+agent_user - 2-20 caracteres
+lead_id - 1-10 dígitos
+data - data das chamadas a serem retiradas (deve estar no formato AAAA-MM-DD)
+uniqueid - uniqueid da chamada, funciona melhor incluído com outro campo de pesquisa
+extensão - 3-100 caracteres, a extensão listada no recording_log
+
+CAMPOS DE CONFIGURAÇÕES-
+stage - o formato dos dados exportados: csv, tab, pipe (padrão)
+cabeçalho - incluir um cabeçalho (SIM) ou não (NÃO). Isso é opcional, o padrão é não incluir um cabeçalho
+duração - S ou N, o padrão é N. Inclui a duração da gravação na saída (em segundos), antes do local
+
+NOTAS-
+Existe um limite rígido de 100.000 resultados
+
+Exemplo de sequências de URL para chamadas de API:
+http://server/vicidial/non_agent_api.php?source=test&function=recording_lookup&stage=pipe&user=6666&pass=1234&agent_user=1000&date=2010-12-03
+
+Respostas de exemplo:
+ERRO: recording_lookup O USUÁRIO NÃO TEM PERMISSÃO PARA OBTER INFORMAÇÕES DE GRAVAÇÃO - 6666|0
+ERRO: recording_lookup PARÂMETROS DE PESQUISA INVÁLIDOS - 6666|1000||2010-12-03|
+ERRO: recording_lookup NENHUMA GRAVAÇÃO ENCONTRADA - 1255|6666||2010-12-03|
+
+Uma resposta SUCCESS não mostrará "SUCCESS", mas apenas imprimirá os resultados no seguinte formato:
+hora_de_início|usuário|id_de_gravação|id_de_lead|localização
+2010-12-03 12:00:01|1000|534820|876409|http://servidor/caminho/para/gravação/20101203_120000_1234567890_1000-all.wav
+
+Se 'duração' estiver habilitado, este será o formato usado:
+hora_de_início|usuário|id_de_gravação|id_de_lead|duração|localização
+2010-12-03 12:00:01|1000|534820|876409|63|http://servidor/caminho/para/gravação/20101203_120000_1234567890_1000-all.wav
+
+
+
+
+-------------------------------------------------- ------------------------------
+did_log_export - exporta todas as chamadas de entrada para um DID por um dia
+
+NOTA: o usuário da API para esta função deve ter o user_level definido como 7 ou superior e "visualizar relatórios" habilitado
+
+CAMPOS OBRIGATÓRIOS-
+phone_number - 2-20 caracteres, o DID para o qual você deseja extrair logs
+data - data das chamadas a serem retiradas (deve estar no formato AAAA-MM-DD)
+
+CAMPOS DE CONFIGURAÇÕES-
+stage - o formato dos dados exportados: csv, tab, pipe (padrão)
+cabeçalho - incluir um cabeçalho (SIM) ou não (NÃO). Isso é opcional, o padrão é não incluir um cabeçalho
+
+NOTAS-
+Existe um limite rígido de 100.000 resultados
+
+Exemplo de sequências de URL para chamadas de API:
+http://server/vicidial/non_agent_api.php?source=test&function=did_log_export&stage=pipe&user=6666&pass=1234&phone_number=3125551212&date=2010-12-03
+
+Respostas de exemplo:
+ERRO: did_log_export O USUÁRIO NÃO TEM PERMISSÃO PARA OBTER INFORMAÇÕES DID - 6666|0
+ERRO: did_log_export PARÂMETROS DE PESQUISA INVÁLIDOS - 6666|3125551212|2010-12-03
+ERRO: did_log_export NENHUM REGISTRO ENCONTRADO - 1255|3125551212|2010-12-03
+
+Uma resposta SUCCESS não mostrará "SUCCESS", mas apenas imprimirá os resultados no seguinte formato:
+did_number|data_da_chamada|número_de_identificação_do_chamador|duração_em_seg
+3125551212|2010-12-03 12:00:01|7275551212|123
+
+
+
+
+
+-------------------------------------------------- ------------------------------
+phone_number_log - exporta lista de chamadas feitas para um ou mais números de telefone
+
+NOTA: o usuário da API para esta função deve ter o user_level definido como 7 ou superior e "visualizar relatórios" habilitado
+
+CAMPOS OBRIGATÓRIOS-
+phone_number - o(s) número(s) de telefone para o(s) qual(is) você deseja extrair os logs. permite mais de um, separado por vírgulas
+
+CAMPOS DE CONFIGURAÇÕES-
+stage - o formato dos dados exportados: csv, tab, pipe (padrão)
+cabeçalho - incluir um cabeçalho (SIM) ou não (NÃO). Isso é opcional, o padrão é não incluir um cabeçalho
+detalhe - (TODAS) chamadas ou apenas (ÚLTIMA) chamada. o padrão é (TODAS)
+tipo - (IN)entrada, (OUT)saída ou (ALL) chamadas. o padrão é (OUT) chamadas
+archived_lead - S ou N, definir como S consultará apenas os leads do vicidial_list_archive para obter detalhes dos leads, o padrão é N.
+
+NOTAS-
+Existe um limite rígido de 100.000 resultados
+O campo 'phone_number' não é indexado por padrão. Se você planeja usar esta função, pode ser que seu administrador de sistema adicione índices naquele campo nas tabelas vicidial_log e vicidial_closer_log.
+
+Exemplo de sequências de URL para chamadas de API:
+http://server/vicidial/non_agent_api.php?source=test&function=phone_number_log&stage=pipe&user=6666&pass=1234&phone_number=3125551212,9998887112
+
+Respostas de exemplo:
+ERRO: phone_number_log O USUÁRIO NÃO TEM PERMISSÃO PARA OBTER INFORMAÇÕES DO REGISTRO DE CHAMADAS - 6666|0
+ERRO: phone_number_log NENHUM NÚMERO DE TELEFONE VÁLIDO DEFINIDO - 6666|312|2010-12-03
+ERRO: phone_number_log NENHUM REGISTRO ENCONTRADO - 1255|3125551212|2010-12-03
+
+Uma resposta SUCCESS não mostrará "SUCCESS", mas apenas imprimirá os resultados no seguinte formato:
+número_de_telefone|data_da_chamada|id_da_lista|duração_em_seg|status_do_lead|motivo_do_desligamento|status_da_chamada|id_da_origem|usuário
+9998887112|2017-01-06 08:11:01|82106|25|TD|AGENTE|VENDA|mail098|6666
+
+
+
+
+
+-------------------------------------------------- ------------------------------
+agent_stats_export - exporta estatísticas de atividade do agente
+
+NOTA: o usuário da API para esta função deve ter o user_level definido como 7 ou superior e "visualizar relatórios" habilitado
+
+CAMPOS OBRIGATÓRIOS-
+fonte - descrição do que originou a chamada da API (máximo de 20 caracteres)
+datetime_start - data/hora de início da atividade do agente a ser extraída (deve estar no formato "AAAA-MM-DD+HH:MM:SS")
+datetime_end - data/hora final da atividade do agente a ser extraída (deve estar no formato "AAAA-MM-DD+HH:MM:SS")
+
+CAMPOS DE CONFIGURAÇÕES-
+agent_user - 2-20 caracteres, use apenas para estatísticas de um agente <opcional>
+campaign_id - 2 a 8 caracteres, use apenas para estatísticas de uma campanha <opcional>
+stage - o formato dos dados exportados: csv, tab, pipe (padrão)
+cabeçalho - incluir um cabeçalho (SIM) ou não (NÃO). Isso é opcional, o padrão é não incluir um cabeçalho
+time_format - formato de hora('H','HF','M','S') em horas, minutos ou segundos: H = 1:23:45, M = 83:45, S = 5023 (padrão 'HF')
+				* HF forçará o formato de hora mesmo para o horário de zero segundos "0:00:00"
+group_by_campaign - divide e produz os resultados do agente agrupados por campanha (SIM) ou não (NÃO). Isso é opcional, o padrão é 'NÃO'
+
+NOTAS-
+Existe um limite rígido de 1.000.000 registros analisados
+
+Exemplo de sequências de URL para chamadas de API:
+http://server/vicidial/non_agent_api.php?source=test&function=agent_stats_export&time_format=M&stage=pipe&user=6666&pass=1234&agent_user=6666&datetime_start=2012-08-09+00:00:00&datetime_end=2012-08-10+23:59:59
+http://server/vicidial/non_agent_api.php?DB=0&stage=pipe&user=6666&pass=1234&source=test&function=agent_stats_export&datetime_start=2012-03-26+00:00:00&datetime_end=2012-03-26+23:59:59&header=SIM
+
+Respostas de exemplo:
+ERRO: agent_stats_export O USUÁRIO NÃO TEM PERMISSÃO PARA OBTER INFORMAÇÕES DO AGENTE - 6666|0
+ERRO: agent_stats_export PARÂMETROS DE PESQUISA INVÁLIDOS - 6666||2010-12-03 00:00:00|2010-12-03 00:00:01|
+ERRO: agent_stats_export NENHUM REGISTRO ENCONTRADO - 1255||2010-12-03 00:00:00|2010-12-03 00:00:01|
+
+Uma resposta SUCCESS não mostrará "SUCCESS", mas apenas imprimirá os resultados no seguinte formato:
+usuário|nome_completo|grupo_de_usuários|chamadas|tempo_de_login|tempo_total_de_conversação|tempo_médio_de_conversação|tempo_médio_de_espera|porcentagem_da_fila|tempo_de_pausa|sessões|sessão_média|pausas|tempo_médio_de_pausa|porcentagem_de_pausa|pausas_por_sessão|tempo_de_espera|tempo_de_conversação|tempo_de_disposição|tempo_inativo
+1029|agente de teste|ADMIN|1|0:01:52|0:00:16|0:00:16|0:00:18|16,7%|54|3|0:00:37|5|0:00:11|48,2%|2|0:00:32|0:07:54|0:01:22|0:00:00
+6666|Usuário administrador|ADMIN|16|0:34:31|0:07:54|0:00:00|0:00:07|100%|1411|13|0:02:39|42|0:00:34|68,1%|3|0:01:44|0:07:54|0:01:22|0:00:00
+
+* se a opção 'group_by_campaign' estiver habilitada, o formato acima terá 'campaign_id' como a primeira coluna, e a atividade de cada agente será dividida em linhas separadas pelas campanhas nas quais ele estava conectado durante o período de tempo solicitado.
+
+
+
+
+
+-------------------------------------------------- ------------------------------
+user_group_status - status em tempo real de um ou mais grupos de usuários
+
+NOTA: o usuário da API para esta função deve ter o user_level definido como 7 ou superior e "visualizar relatórios" habilitado
+
+CAMPOS OBRIGATÓRIOS-
+fonte - descrição do que originou a chamada da API (máximo de 20 caracteres)
+user_groups - lista delimitada por barras verticais de grupos de usuários para obter informações de status para "ADMIN|AGENTS"
+
+CAMPOS DE CONFIGURAÇÕES-
+stage - o formato dos dados exportados: csv, tab, pipe (padrão)
+cabeçalho - incluir um cabeçalho (SIM) ou não (NÃO). Isso é opcional, o padrão é não incluir um cabeçalho
+
+NOTAS-
+Existe um limite rígido de 1.000.000 registros analisados
+
+Exemplo de sequências de URL para chamadas de API:
+http://server/vicidial/non_agent_api.php?source=test&user=6666&pass=1234&function=user_group_status&user_groups=ADMIN|AGENT&header=YES
+
+Respostas de exemplo:
+ERRO: user_group_status O USUÁRIO NÃO TEM PERMISSÃO PARA OBTER INFORMAÇÕES DO GRUPO DE USUÁRIOS - 6666|0
+ERRO: user_group_status PARÂMETROS DE PESQUISA INVÁLIDOS - 6666||
+
+Uma resposta SUCCESS não mostrará "SUCCESS", mas apenas imprimirá os resultados no seguinte formato:
+grupos_de_usuários|chamadas_em_espera|agentes_conectados|agentes_em_chamadas|agentes_em_espera|agentes_pausados|agentes_em_chamadas_mortas|agentes_em_disposição|agentes_em_discagem
+AGENTE ADMINISTRATIVO|0|1|0|1|0|0|0|0
+
+
+
+
+
+-------------------------------------------------- ------------------------------
+in_group_status - status em tempo real de um ou mais grupos
+
+NOTA: o usuário da API para esta função deve ter o user_level definido como 7 ou superior e "visualizar relatórios" habilitado
+
+CAMPOS OBRIGATÓRIOS-
+fonte - descrição do que originou a chamada da API (máximo de 20 caracteres)
+in_groups - lista delimitada por barras verticais de grupos de entrada para obter informações de status para "SALESLINE|SUPPORT"
+
+CAMPOS DE CONFIGURAÇÕES-
+stage - o formato dos dados exportados: csv, tab, pipe (padrão)
+cabeçalho - incluir um cabeçalho (SIM) ou não (NÃO). Isso é opcional, o padrão é não incluir um cabeçalho
+
+NOTAS-
+Existe um limite rígido de 1.000.000 registros analisados
+
+Exemplo de sequências de URL para chamadas de API:
+http://server/vicidial/non_agent_api.php?source=test&user=6666&pass=1234&stage=csv&function=in_group_status&in_groups=SALESLINE|SUPPORT&header=YES
+
+Respostas de exemplo:
+ERRO: in_group_status O USUÁRIO NÃO TEM PERMISSÃO PARA OBTER INFORMAÇÕES DO GRUPO - 6666|0
+ERRO: in_group_status PARÂMETROS DE PESQUISA INVÁLIDOS - 6666||
+
+Uma resposta SUCCESS não mostrará "SUCCESS", mas apenas imprimirá os resultados no seguinte formato:
+ingroups,total_chamadas,chamadas_em_espera,agentes_conectados,agentes_em_chamadas,agentes_em_espera,agentes_pausados,agentes_em_disposição,agentes_em_discagem
+SUPORTE À LINHA DE VENDAS,31,0,75,54,0,20,1,0
+
+
+
+
+-------------------------------------------------- ------------------------------
+agent_status - status em tempo real de um usuário agente
+
+NOTA: o usuário da API para esta função deve ter o user_level definido como 7 ou superior e "visualizar relatórios" habilitado
+
+CAMPOS OBRIGATÓRIOS-
+fonte - descrição do que originou a chamada da API (máximo de 20 caracteres)
+agent_user - 2-20 caracteres, use apenas para um status de agente
+
+CAMPOS DE CONFIGURAÇÕES-
+stage - o formato dos dados exportados: csv, tab, pipe (padrão)
+cabeçalho - incluir um cabeçalho (SIM) ou não (NÃO). Isso é opcional, o padrão é não incluir um cabeçalho
+include_ip - inclui o campo computer_ip (SIM) ou não (NÃO), o último endereço IP que o agente usou para efetuar login na tela do agente
+
+Exemplo de sequências de URL para chamadas de API:
+http://server/vicidial/non_agent_api.php?source=test&user=6666&pass=1234&function=agent_status&agent_user=1234&stage=csv&header=YES&include_ip=YES
+
+Respostas de exemplo:
+ERRO: agent_status O USUÁRIO NÃO TEM PERMISSÃO PARA OBTER INFORMAÇÕES DO AGENTE - 6666|0
+ERRO: agent_status PARÂMETROS DE PESQUISA INVÁLIDOS - 6666||
+ERRO: agent_status AGENTE NÃO ENCONTRADO - 6666||
+ERRO: agent_status AGENTE NÃO LOGADO - 6666||
+
+Uma resposta SUCCESS não mostrará "SUCCESS", mas apenas imprimirá os resultados no seguinte formato:
+status,call_id,lead_id,campaign_id,calls_today,full_name,user_group,user_level,pause_code,real_time_sub_status,phone_number,vendor_lead_code,session_id,computer_ip
+INCALL,M4050908070000012345,12345,TESTCAMP,1,Agente de teste,AGENTES,3,LOGIN,,7275551212,123456,8600051,192.168.1.205
+INCALL|M4181606420000000104|104|TESTBLND|1|Administrador|ADMIN|9|BRK2|MORTO|3125551212|123457|8600051,192.168.1.206
+PAUSADO||105|TESTBLND|1|Admin|ADMIN|9||PRÉVIA|9545551212|123458|8600052,192.168.1.202
+
+NOTA: o campo real_time_sub_status pode consistir em: DEAD, DISPO, 3-WAY, PARK, RING, PREVIEW, DIAL ou pode estar vazio
+
+
+
+
+-------------------------------------------------- ------------------------------
+user_details - exibe informações sobre um usuário
+
+NOTA: o usuário da API para esta função deve ter o user_level definido como 7 ou superior e "visualizar relatórios" habilitado
+
+CAMPOS OBRIGATÓRIOS-
+fonte - descrição do que originou a chamada da API (máximo de 20 caracteres)
+agent_user - 2-20 caracteres, use apenas para um usuário
+
+CAMPOS DE CONFIGURAÇÕES-
+stage - o formato dos dados exportados: csv, tab, pipe (padrão)
+cabeçalho - incluir um cabeçalho (SIM) ou não (NÃO). Isso é opcional, o padrão é não incluir um cabeçalho
+
+Exemplo de sequências de URL para chamadas de API:
+http://server/vicidial/non_agent_api.php?source=test&user=6666&pass=1234&function=user_details&agent_user=1234&stage=csv&header=YES
+
+Respostas de exemplo:
+ERRO: user_details O USUÁRIO NÃO TEM PERMISSÃO PARA OBTER DETALHES DO USUÁRIO - 6666|0
+ERRO: user_details PARÂMETROS DE PESQUISA INVÁLIDOS - 6666||
+ERRO: user_details USUÁRIO NÃO ENCONTRADO - 6666||
+
+Uma resposta SUCCESS não mostrará "SUCCESS", mas apenas imprimirá os resultados no seguinte formato:
+usuário,nome_completo,grupo_de_usuários,nível_de_usuário,ativo
+11111,usuário de teste,ADMIN,6,Y
+
+
+
+
+-------------------------------------------------- ------------------------------
+callid_info - informações sobre uma chamada com base no caller_code ou ID da chamada
+
+NOTA: o usuário da API para esta função deve ter o user_level definido como 7 ou superior e "visualizar relatórios" habilitado
+
+CAMPOS OBRIGATÓRIOS-
+fonte - descrição do que originou a chamada da API (máximo de 20 caracteres)
+call_id - 16-40 caracteres
+
+CAMPOS DE CONFIGURAÇÕES-
+stage - o formato dos dados exportados: csv, tab, pipe (padrão)
+cabeçalho - incluir um cabeçalho (SIM) ou não (NÃO). Isso é opcional, o padrão é não incluir um cabeçalho
+detalhe - se definido como SIM, mais informações de chamada serão emitidas. O padrão é NÃO, apenas callid e tempo de conversação do cliente serão emitidos
+
+Exemplo de sequências de URL para chamadas de API:
+http://server/vicidial/non_agent_api.php?source=test&user=6666&pass=1234&function=callid_info&call_id=M4050908070000012345&stage=csv&header=YES
+
+Respostas de exemplo:
+ERRO: callid_info O USUÁRIO NÃO TEM PERMISSÃO PARA OBTER INFORMAÇÕES DE CHAMADA - 6666|0
+ERRO: callid_info PARÂMETROS DE PESQUISA INVÁLIDOS - 6666||
+ERRO: callid_info CHAMADA NÃO ENCONTRADA - 6666||
+ERRO: callid_info REGISTRO DE CHAMADAS NÃO ENCONTRADO - 6666||
+
+Uma resposta SUCCESS não mostrará "SUCCESS", mas apenas imprimirá os resultados no seguinte formato:
+id_de_chamada,hora_do_cliente
+M4050908070000012345,725
+
+Definir "detail=YES" resultará na seguinte saída:
+call_id,custtime,call_date,campaign_id,list_id,status,user,phone
+M4050908070000012345,725,2014-01-24 09:26:09,TESTCAMP,999,A,6666,3125551212
+
+
+
+
+-------------------------------------------------- ------------------------------
+lead_field_info - extrai o valor de um campo de um lead
+
+NOTA: o usuário da API para esta função deve ter o user_level definido como 7 ou superior e "modificar leads" habilitado
+
+CAMPOS OBRIGATÓRIOS-
+fonte - descrição do que originou a chamada da API (máximo de 20 caracteres)
+lead_id - 1-10 dígitos
+field_name - nome do campo de lead a ser extraído
+
+CAMPOS OPCIONAIS-
+custom_fields - S ou N, o padrão é N. Se o campo que você deseja extrair é um campo personalizado ou não
+list_id - substituição para o entry_list_id de um campo personalizado
+archived_lead - S ou N, definir como S consultará apenas os leads do vicidial_list_archive para obter detalhes dos leads, o padrão é N.
+
+Exemplo de sequências de URL para chamadas de API:
+http://server/vicidial/non_agent_api.php?source=test&user=6666&pass=1234&function=lead_field_info&field_name=cc_value&lead_id=1139739&custom_fields=Y&list_id=999888999777
+
+Respostas de exemplo:
+ERRO: lead_field_info O USUÁRIO NÃO TEM PERMISSÃO PARA OBTER INFORMAÇÕES DO LEAD - 6666|0
+ERRO: lead_field_info PARÂMETROS DE PESQUISA INVÁLIDOS - 6666||
+ERRO: LISTA lead_field_info NÃO ENCONTRADA - 6666||
+ERRO: lead_field_info LEAD NÃO ENCONTRADO - 6666||
+ERRO: lead_field_info CAMPO DE LEAD NÃO ENCONTRADO - 6666||
+
+Uma resposta SUCCESS não mostrará "SUCCESS", mas apenas imprimirá o valor do campo:
+1234567890
+
+
+
+
+
+-------------------------------------------------- ------------------------------
+lead_all_info - exibe todos os dados de um lead (opcionalmente incluindo campos personalizados)
+
+OBSERVAÇÃO: o usuário da API para esta função deve ter o user_level definido como 7 ou superior e "visualizar relatórios" habilitado e modify_leads definido como 1-5
+
+CAMPOS OBRIGATÓRIOS-
+fonte - descrição do que originou a chamada da API (máximo de 20 caracteres)
+lead_id - 1-10 dígitos
+
+CAMPOS OPCIONAIS-
+phone_number - 6 a 19 dígitos, pode ser usado no lugar de um lead_id (pode retornar vários registros, até 1000, o lead adicionado mais recentemente primeiro)
+custom_fields - S ou N, o padrão é N. Se o campo que você deseja extrair é um campo personalizado ou não
+force_entry_list_id - 3 a 12 dígitos, substituirá o entry_list_id atribuído ao lead para procurar dados de campos personalizados para este lead em uma lista diferente
+archived_lead - S ou N, definir como S consultará apenas os leads do vicidial_list_archive para obter detalhes dos leads, o padrão é N.
+
+CAMPOS DE CONFIGURAÇÕES-
+stage - o formato dos dados exportados: csv, tab, newline, pipe (padrão)
+cabeçalho - incluir um cabeçalho (SIM) ou não (NÃO). Isso é opcional, o padrão é não incluir um cabeçalho
+
+Exemplo de sequências de URL para chamadas de API:
+http://server/vicidial/non_agent_api.php?source=test&user=6666&pass=1234&function=lead_all_info&lead_id=1079425
+http://server/vicidial/non_agent_api.php?source=test&user=6666&pass=1234&function=lead_all_info&phone_number=3125551212
+http://server/vicidial/non_agent_api.php?source=test&user=6666&pass=1234&function=lead_all_info&lead_id=1079425&header=YES&custom_fields=Y
+http://server/vicidial/non_agent_api.php?source=test&user=6666&pass=1234&function=lead_all_info&lead_id=1079425&header=YES&custom_fields=Y&force_entry_list_id=999880
+
+Respostas de exemplo:
+ERRO: lead_all_info O USUÁRIO NÃO TEM PERMISSÃO PARA OBTER INFORMAÇÕES DO LEAD - 6666|0
+ERRO: lead_all_info LISTA NÃO ENCONTRADA - 6666|||
+ERRO: lead_all_info LEAD NÃO ENCONTRADO - 6666|||
+
+Uma resposta SUCCESS não mostrará "SUCCESS", mas apenas imprimirá os resultados no seguinte formato:
+status|usuário|código_lead_do_fornecedor|id_da_fonte|id_da_lista|deslocamento_GMT_agora|código_do_telefone|número_de_telefone|título|nome|inicial_do_meio|sobrenome|endereço1|endereço2|endereço3|cidade|estado|província|código_postal|código_do_país|gênero|data_de_nascimento|telefone_alternativo|e-mail|frase_de_segurança|comentários|contagem_de_chamados|hora_da_última_chamada_local|classificação|proprietário|id_da_lista_de_entradas|id_do_lead
+TD|6666|554443||501|-4,00|1|9998887112|Sr.|Billy'Oj|U|O'Reillyo|ad1|ad2|ad3|cidade próxima|FL|U|33777||U|0000-00-00|bobo'brien|test@test.com||2017-06-01 18:38:41|79|2017-06-09 14:53:27|0|4646|0|98234789
+
+
+
+
+
+-------------------------------------------------- ------------------------------
+lead_status_search - exibe todos os valores de campo de todos os leads que correspondem ao status e à data da chamada na solicitação
+
+NOTA: o usuário da API para esta função deve ter o user_level definido como 7 ou superior e "modificar leads" habilitado
+
+CAMPOS OBRIGATÓRIOS-
+fonte - descrição do que originou a chamada da API (máximo de 20 caracteres)
+status - status dos leads a serem extraídos
+data - chamada data dos leads a serem extraídos (deve estar no formato AAAA-MM-DD)
+			NOTA: os registros de chamadas de entrada e saída são pesquisados, não mais do que 2.000 respostas são exibidas
+
+CAMPOS OPCIONAIS-
+lead_id - 1-10 dígitos, usado somente se status e data estiverem vazios
+custom_fields - S ou N, o padrão é N. Exibir valores de campos personalizados ou não
+list_id - substituição para o entry_list_id de um campo personalizado
+archived_lead - S ou N, definir como S consultará apenas os leads vicidial_list_archive para pesquisa e detalhes de leads, o padrão é N.
+
+Exemplo de sequências de URL para chamadas de API:
+http://server/vicidial/non_agent_api.php?source=test&user=6666&pass=1234&function=lead_status_search&status=NP&date=2017-12-29&custom_fields=Y
+
+Respostas de exemplo:
+ERRO: lead_status_search O USUÁRIO NÃO TEM PERMISSÃO PARA OBTER INFORMAÇÕES DO LEAD - 6666|0
+ERRO: lead_status_search PARÂMETROS DE PESQUISA INVÁLIDOS - 6666|||
+ERRO: lead_status_search NENHUM RESULTADO ENCONTRADO - 6666|||
+
+Uma resposta SUCESSO não mostrará "SUCESSO", mas imprimirá os valores de todos os campos de lead, um por linha, com leads começando com ";---------- INÍCIO DO REGISTRO 1 ----------":
+
+;---------- INÍCIO DO REGISTRO 1 ----------
+id_do_lead => 823602
+estado => TD
+usuário => 6666
+código_de_venda_lead => 1028405
+source_id => Eu
+lista_id => 107
+gmt_offset_now => -5,00
+código_telefone => 1
+número_de_telefone => 9999028405
+...
+test_custom_field => novo valor
+
+
+
+
+
+-------------------------------------------------- ------------------------------
+lead_search - pesquisa leads na tabela vicidial_list por números de telefone
+
+OBSERVAÇÃO: o usuário da API para esta função deve ter o user_level definido como 7 ou superior e "visualizar relatórios" habilitado e modify_leads definido como 1-5
+
+CAMPOS OBRIGATÓRIOS-
+phone_number - 6-19 dígitos (múltiplos separados por vírgula ',', por exemplo: 3125551212,9055551212,4075551212)
+fonte - descrição do que originou a chamada da API (máximo de 20 caracteres)
+
+CAMPOS DE CONFIGURAÇÕES-
+registros - número de registros a serem exibidos nos resultados se mais de 1 for encontrado (o padrão é '1000' [os leads inseridos mais recentemente são exibidos primeiro])
+archived_lead - S ou N, definir como S consultará apenas os leads vicidial_list_archive para pesquisa e detalhes de leads, o padrão é N.
+
+CAMPOS DE CONFIGURAÇÕES-
+cabeçalho - incluir um cabeçalho (SIM) ou não (NÃO). Isso é opcional, o padrão é não incluir um cabeçalho
+
+NOTAS-
+- Se nenhum resultado for encontrado para nenhum dos números de telefone pesquisados, um erro será exibido
+- Se houver alguma correspondência encontrada, cada número de telefone pesquisado terá uma linha na saída, detalhada abaixo
+- Se mais de 1 lead correspondente for encontrado para um número de telefone, os lead_ids correspondentes serão separados por um traço '-'
+
+Exemplo de sequências de URL para chamadas de API:
+http://server/vicidial/non_agent_api.php?source=test&user=6666&pass=1234&function=lead_search&phone_number=9998885112,9998887112,9998886112,4075551212
+http://server/vicidial/non_agent_api.php?source=test&user=6666&pass=1234&function=lead_search&phone_number=9998885112,9055551212,9998886112,4075551212&header=SIM
+
+Respostas de exemplo:
+ERRO: lead_search O USUÁRIO NÃO TEM PERMISSÃO PARA PESQUISAR LEADS - 6666|0
+ERRO: lead_search NENHUM MÉTODO DE PESQUISA VÁLIDO - ||||
+ERRO: lead_search NENHUMA CORRESPONDÊNCIA ENCONTRADA NO SISTEMA - ||||
+
+Uma resposta SUCCESS não mostrará "SUCCESS", mas apenas imprimirá os resultados no seguinte formato:
+chave_de_pesquisa|registros_encontrados|IDs_de_lead
+9998885112|4|1949076-1946517-1943958-1941399
+9998887112|8|1946941-1946940-1946939-1946875-1946805-1946656-1946655-1944382
+9998886112|1|1946891
+4075551212|0|
+
+
+
+
+
+-------------------------------------------------- ------------------------------
+ccc_lead_info - gera dados de lead para chamada de comunicação entre clusters
+
+NOTA: o usuário da API para esta função deve ter o user_level definido como 7 ou superior e "visualizar relatórios" habilitado
+
+CAMPOS OBRIGATÓRIOS-
+fonte - descrição do que originou a chamada da API (máximo de 20 caracteres)
+call_id - 16-40 caracteres
+
+CAMPOS DE CONFIGURAÇÕES-
+stage - o formato dos dados exportados: csv, tab, newline, pipe (padrão)
+cabeçalho - incluir um cabeçalho (SIM) ou não (NÃO). Isso é opcional, o padrão é não incluir um cabeçalho
+
+Exemplo de sequências de URL para chamadas de API:
+http://server/vicidial/non_agent_api.php?source=test&user=6666&pass=1234&function=ccc_lead_info&call_id=M4050908070000012345&stage=csv&header=YES
+
+Respostas de exemplo:
+ERRO: ccc_lead_info O USUÁRIO NÃO TEM PERMISSÃO PARA OBTER INFORMAÇÕES DO LEAD - 6666|0
+ERRO: ccc_lead_info PARÂMETROS DE PESQUISA INVÁLIDOS - 6666||
+ERRO: ccc_lead_info CHAMADA NÃO ENCONTRADA - 6666||
+ERRO: ccc_lead_info LEAD NÃO ENCONTRADO - 6666||
+
+Uma resposta SUCCESS não mostrará "SUCCESS", mas apenas imprimirá os resultados no seguinte formato:
+status|usuário|código_lead_do_fornecedor|id_da_fonte|id_da_lista|deslocamento_gmt_agora|código_do_telefone|número_de_telefone|título|nome|inicial_do_meio|sobrenome|endereço1|endereço2|endereço3|cidade|estado|província|código_postal|código_do_país|sexo|data_de_nascimento|telefone_alternativo|e-mail|frase_de_segurança|comentários|contagem_de_chamados|hora_da_última_chamada_local|classificação|proprietário
+TD|6666|554443||501|-4,00|1|9998887112|Sr.|Billy'Oj|U|O'Reillyo|ad1|ad2|ad3|cidade próxima|FL|U|33777||U|0000-00-00|bobo'brien|test@test.com||2017-06-01 18:38:41|79|2017-06-09 14:53:27|0|4646
+
+
+
+
+
+-------------------------------------------------- ------------------------------
+lead_callback_info - gera dados de retorno de chamada agendados para um lead específico
+
+NOTA: o usuário da API para esta função deve ter o user_level definido como 7 ou superior e "visualizar relatórios" habilitado
+
+CAMPOS OBRIGATÓRIOS-
+fonte - descrição do que originou a chamada da API (máximo de 20 caracteres)
+lead_id - 16-40 caracteres
+
+CAMPOS DE CONFIGURAÇÕES-
+stage - o formato dos dados exportados: csv, tab, newline, pipe (padrão)
+cabeçalho - incluir um cabeçalho (SIM) ou não (NÃO). Isso é opcional, o padrão é não incluir um cabeçalho
+search_location - Onde verificar os registros de retorno de chamada agendados no sistema, é possível selecionar apenas um (o padrão é ATUAL):
+				ATUAL - verificar retornos de chamada agendados ativos
+				ARQUIVO - verificar retornos de chamada agendados arquivados
+				TODOS - verifique se há retornos de chamada agendados ativos e arquivados
+
+Exemplo de sequências de URL para chamadas de API:
+http://server/vicidial/non_agent_api.php?source=test&user=6666&pass=1234&function=lead_callback_info&lead_id=12345&stage=pipe&header=YES&search_location=ALL
+http://server/vicidial/non_agent_api.php?source=test&user=6666&pass=1234&function=lead_callback_info&lead_id=846446&search_location=ALL&header=YES
+
+Respostas de exemplo:
+ERRO: lead_callback_info O USUÁRIO NÃO TEM PERMISSÃO PARA OBTER INFORMAÇÕES DO LEAD - 6666|0
+ERRO: lead_callback_info PARÂMETROS DE PESQUISA INVÁLIDOS - 6666||
+ERRO: lead_callback_info LEAD NÃO ENCONTRADO - 6666||
+ERRO: lead_callback_info RETORNO DE CHAMADA NÃO ENCONTRADO - 6666||
+
+Uma resposta SUCCESS não mostrará "SUCCESS", mas apenas imprimirá os resultados no seguinte formato (a entrada de retorno de chamada mais recente estará na parte inferior dos resultados):
+lead_id|tipo_de_retorno|destinatário|status_de_retorno|status_de_retorno|data_de_retorno|data_de_entrada|usuário|id_da_lista|id_da_campanha|grupo_de_usuários|fuso_horário_do_cliente|horário_do_cliente|comentários
+846446|ARQUIVO|SOMENTE PARA USUÁRIO|INATIVO|CBTEST|2018-09-01 15:00:00|2018-08-27 01:06:45|6666|107|TESTCAMP|ADMIN|AUS-ACST-N-Fuso horário do Território do Norte|2018-08-27 00:00:00|
+846446|ARQUIVO|SOMENTE PARA USUÁRIO|INATIVO|CBTEST|2018-12-14 14:00:00|2018-12-14 16:42:32|6666|107|TESTCAMP|ADMIN||2018-12-14 14:00:00|Retornar a ligação após o almoço
+846446|ATUAL|SOMENTE PARA USUÁRIO|INATIVO|CBTEST|2018-12-14 19:00:00|2018-12-14 16:44:08|6666|107|TESTCAMP|ADMIN||2018-12-14 19:00:00|Retornar a ligação após o jantar
+846446|ATUAL|SOMENTE PARA USUÁRIO|ATIVO|CBLEAD|2018-12-17 10:00:00|2018-12-14 16:50:56|6666|107|TESTCAMP|ADMIN|USA-EST-Y-Fuso horário leste dos EUA|2018-12-17 10:00:00|tente novamente na segunda de manhã
+
+
+
+
+
+-------------------------------------------------- ------------------------------
+lead_dearchive - move um lead do arquivo para a tabela de leads ativos
+
+NOTA: o usuário da API para esta função deve ter o user_level definido como 8 ou superior e "modificar leads" habilitado
+
+CAMPOS OBRIGATÓRIOS-
+fonte - descrição do que originou a chamada da API (máximo de 20 caracteres)
+lead_id - 16-40 caracteres
+
+Exemplo de sequências de URL para chamadas de API:
+http://server/vicidial/non_agent_api.php?source=test&user=6666&pass=1234&function=lead_dearchive&lead_id=274071
+
+Respostas de exemplo:
+ERRO: lead_dearchive O USUÁRIO NÃO TEM PERMISSÃO PARA MODIFICAR AS INFORMAÇÕES DO LEAD - 6666|0
+ERRO: lead_dearchive PARÂMETROS DE PESQUISA INVÁLIDOS - 6666||
+ERRO: lead_dearchive FALHA NA INSERÇÃO DE LEAD - 6666||
+ERRO: lead_dearchive LEAD NÃO ARQUIVADO ENCONTRADO - 6666||
+ERRO: lead_dearchive LEAD ARQUIVADO NÃO ENCONTRADO - 6666||
+SUCESSO: lead_dearchive LEAD DESARQUIVADO - 6666|274071|1|1
+
+
+
+
+
+-------------------------------------------------- ------------------------------
+update_log_entry - atualiza o status de uma entrada vicidial_log ou vicidial_closer_log
+
+NOTA: o usuário da API para esta função deve ter o user_level definido como 8 ou superior e "modificar leads" habilitado
+
+CAMPOS OBRIGATÓRIOS-
+fonte - descrição do que originou a chamada da API (máximo de 20 caracteres)
+call_id - o uniqueid ou o ID de 20 caracteres da chamada
+grupo - um campaign_id ou um group_id no grupo
+status - o novo status para o registro de log a ser definido
+
+NOTAS-
+Existe um limite rígido de 1.000.000 registros analisados
+
+Exemplo de sequências de URL para chamadas de API:
+http://server/vicidial/non_agent_api.php?source=test&user=6666&pass=1234&function=update_log_entry&group=SALESLINE&call_id=Y2010309520000000234&status=SALEX
+
+Respostas de exemplo:
+ERRO: update_log_entry O USUÁRIO NÃO TEM PERMISSÃO PARA ATUALIZAR LOGs - 6666|0
+ERRO: update_log_entry PARÂMETROS DE PESQUISA INVÁLIDOS - 6666||
+ERRO: update_log_entry GRUPO NÃO ENCONTRADO - 6666||
+ERRO: update_log_entry NENHUM REGISTRO ENCONTRADO - 6666||||
+ERRO: update_log_entry NENHUM REGISTRO ATUALIZADO - 6666|TESTCAMP|M9131554060000426264|SALEX|SALEX|1347566056.399
+SUCESSO: update_log_entry REGISTRO FOI ATUALIZADO - 6666|6666|TESTCAMP|M9131554060000426264|SALEX|WN|1347566056.399|
+
+
+
+
+
+-------------------------------------------------- ------------------------------
+add_lead - adiciona um novo lead à tabela vicidial_list com vários campos e opções
+
+NOTA: o usuário da API para esta função deve ter modify_leads definido como 1 e user_level
+      deve ser definido como 8 ou superior
+
+CAMPOS OBRIGATÓRIOS-
+phone_number - deve ser todos números, 6-16 dígitos
+phone_code - deve ser composto apenas por números, de 1 a 4 dígitos, o padrão é 1 se não for definido
+list_id - deve ser composto apenas por números, de 3 a 12 dígitos, o padrão é 999 se não for definido
+fonte - descrição do que originou a chamada da API (máximo de 20 caracteres)
+
+CAMPOS DE CONFIGURAÇÕES-
+dnc_check - Y, N ou AREACODE, o padrão é N
+campaign_dnc_check - S, N ou AREACODE, o padrão é N
+campaign_id - ID de campanha de 2 a 8 caracteres, necessário se estiver usando campaign_dnc_check ou retornos de chamada
+add_to_hopper - S ou N, o padrão é N
+hopper_priority - 99 a -99, quanto maior o número, maior a prioridade, o padrão é 0
+hopper_local_call_time_check - S ou N, o padrão é N. Valide o tempo de chamada local e/ou o tempo de chamada do estado antes de inserir o cabo no funil
+duplicate_check - Verifique se há registros duplicados no sistema, pode selecionar mais de um (duplicate_check=DUPLIST-DUPTITLEALTPHONELIST)
+			Se uma duplicata for encontrada, retornará um erro, os dados duplicados e lead_id e list_id do registro existente
+			Aqui estão as opções duplicate_check:
+				DUPLIST - verifique se há número de telefone duplicado na mesma lista
+				DUPCAMP - verifique se há número de telefone duplicado em todas as listas para a campanha desta lista
+				DUPSYS - verificar se há número de telefone duplicado em todo o sistema
+				DUPPHONEALTLIST - verifique se há telefone duplicado em relação a phone_number e alt_phone na mesma lista
+				DUPPHONEALTCAMP - verifique se há telefone duplicado em relação a phone_number e alt_phone em todas as listas da campanha desta lista
+				DUPPHONEALTSYS - verifique se há telefone duplicado em relação a phone_number e alt_phone em todo o sistema
+				DUPTITLEALTPHONELIST - verifique se há título duplicado e alt_phone na mesma lista
+				DUPTITLEALTPHONECAMP - verifique se há títulos duplicados e alt_phone em todas as listas para a campanha desta lista
+				DUPTITLEALTPHONESYS - verifique se há títulos duplicados e alt_phone em todo o sistema
+				DUPNAMEPHONELIST - verifique se há nomes, sobrenomes e números de telefone duplicados na mesma lista
+				DUPNAMEPHONECAMP - verifique se há nomes, sobrenomes e números de telefone duplicados em todas as listas da campanha desta lista
+				DUPNAMEPHONESYS - verifique se há nomes, sobrenomes e números de telefone duplicados em todo o sistema
+				 " 1/2/3/7/14/15/21/28/30/60/90/180/360DAY - Adicionado a uma das verificações duplicadas acima (ou seja, "DUPSYS90DAY"), verifica apenas os leads carregados nos últimos 90 dias
+usacan_prefix_check - S ou N, o padrão é N. Verifique se há um 4º dígito válido para números de telefone dos EUA e Canadá (não pode ser 0 ou 1)
+usacan_areacode_check - S ou N, o padrão é N. Verifique se há um código de área válido para números de telefone dos EUA e Canadá (também verifica se há 10 dígitos)
+nanpa_ac_prefix_check - Y ou N, o padrão é N. Verifique se há um código de área e prefixo NANPA válidos, se houver dados NANPA opcionais no sistema
+custom_fields - S ou N, o padrão é N. Define se a API aceitará dados de campo personalizado ao inserir leads na tabela vicidial_list
+			Para inserir campos personalizados, basta adicionar o rótulo do campo como uma variável à string do URL
+			Por exemplo, se o field_label for "favorite_color", você adicionaria "&favorite_color=blue"
+tz_method - <empty>, POSTAL, TZCODE ou NANPA, o padrão é <empty> que usará o código do país e o código de área para pesquisas de fuso horário
+				POSTAL depende do campo postal_code
+				O TZCODE depende do preenchimento do campo do proprietário com um código de fuso horário adequado
+				O NANPA depende dos dados de prefixo de código de área NANPA opcionais que estão sendo carregados no seu sistema
+retorno de chamada - S ou N, o padrão é N. Defina este lead como um retorno de chamada agendado. O campo campaign_id é OBRIGATÓRIO para retornos de chamada
+callback_status - 1-6 caracteres, status de retorno de chamada a ser usado, o padrão é CALLBK (o status vicidial_list será definido como CBHOLD para bloquear)
+callback_datetime - AAAA-MM-DD+HH:MM:SS, data e hora do retorno de chamada agendado. OBRIGATÓRIO se o retorno de chamada estiver definido.
+                        'NOW' pode ser usado para data e hora atuais. 'xDAYS' também pode ser usado onde 'x' é substituído por um número de dias no futuro
+callback_type - USERONLY ou ANYONE, o padrão é ANYONE
+callback_user - ID do usuário ao qual o retorno de chamada USERONLY é atribuído
+callback_comments - Comentários opcionais para aparecer quando o retorno de chamada for chamado de volta
+lookup_state - Y ou N, o padrão é N. Procura o campo de estado na lista de códigos de área. Só funciona se o campo 'state' não estiver preenchido.
+list_exists_check - S ou N, o padrão é N. Se o list_id não for uma lista definida no sistema, ocorrerá ERRO e o lead não será inserido.
+
+(para campos com espaços nos valores, você pode substituir o espaço por um sinal de mais + [endereço, cidade, nome, etc...])
+CAMPOS OPCIONAIS-
+vendor_lead_code - 1-20 caracteres
+source_id - 1-50 caracteres
+gmt_offset_now - substituído pela pesquisa automática da parte phone_code e area_code do número de telefone, se aplicável
+título - 1-4 caracteres
+first_name - 1-30 caracteres
+middle_initial - 1 caractere
+sobrenome - 1-30 caracteres
+endereço1 - 1-100 caracteres
+endereço2 - 1-100 caracteres
+endereço3 - 1-100 caracteres
+cidade - 1-50 caracteres
+estado - 2 caracteres
+província - 1-50 caracteres
+postal_code - 1-10 caracteres
+country_code - 3 caracteres
+gênero - U, M, F (Indefinido, Masculino, Feminino) - padrão é 'U'
+data_de_nascimento - AAAA-MM-DD
+alt_phone - 1-12 caracteres
+e-mail - 1-70 caracteres
+frase_de_segurança - 1-100 caracteres
+comentários - 1-255 caracteres
+multi_alt_phones - 5-1024 caracteres (veja exemplos para mais informações)
+classificação - 1-5 dígitos
+proprietário - 1-20 caracteres (ID do usuário, território ou grupo de usuários)
+entry_list_id - AVISO! USE SOMENTE SE VOCÊ SABE O QUE ESTÁ FAZENDO, PODE QUEBRAR CAMPOS PERSONALIZADOS! (deve ser tudo números, 3-12 dígitos, não funcionará se custom_fields estiver definido como Y)
+
+
+Formato Multi-ALT-Phones:
+
+7275551212_1_trabalho!7275551213_1_irmã+casa!1234567890_1_vizinho
+
+O campo multi-alt-phones é formatado como um campo de conjunto de dados phone-number/phone-code/phone-note (phone code e alt_note são opcionais e o phone code pode ser substituído pelo sinalizador force phone code). O delimitador de registro é um ponto de exclamação com o phone code opcional e a note delimitados dentro do registro por um caractere de sublinhado _.
+
+
+Exemplo de sequências de URL para chamadas de API:
+http://server/vicidial/non_agent_api.php?source=test&user=6666&pass=1234&function=add_lead&phone_number=7275551111
+
+http://server/vicidial/non_agent_api.php?source=test&user=6666&pass=1234&function=add_lead&phone_number=7275551212&phone_code=1&list_id=999&dnc_check=N&first_name=Bob&last_name=Wilson
+
+http://server/vicidial/non_agent_api.php?source=test&user=6666&pass=1234&function=add_lead&phone_number=7275551111&phone_code=1&list_id=999&dnc_check=N&first_name=Bob&last_name=Wilson&add_to_hopper=Y&hopper_local_call_time_check=Y
+
+http://server/vicidial/non_agent_api.php?source=test&user=6666&pass=1234&function=add_lead&phone_number=7275551111&phone_code=1&list_id=999&dnc_check=N&campaign_dnc_check=Y&campaign_id=TESTCAMP&first_name=Bob&last_name=Wilson&address1=1234+Main+St.&city=Chicago+Heights&state=IL&add_to_hopper=Y&hopper_local_call_time_check=Y&multi_alt_phones=7275551212_1_trabalho!7275551213_1_casa+irmã!1234567890_1_vizinho
+
+http://server/vicidial/non_agent_api.php?source=test&user=6666&pass=1234&function=add_lead&phone_number=7275551212&phone_code=1&list_id=999&dnc_check=N&first_name=Bob&last_name=Wilson&duplicate_check=DUPPHONEALTLIST-DUPNAMEPHONELIST
+
+http://server/vicidial/non_agent_api.php?source=test&user=6666&pass=1234&function=add_lead&phone_number=7275551212&phone_code=1&list_id=999&custom_fields=Y&favorite_color=blue
+
+http://server/vicidial/non_agent_api.php?source=test&user=6666&pass=1234&function=add_lead&phone_number=7275551111&campaign_id=TESTCAMP&callback=Y&callback_status=CALLBK&callback_datetime=NOW&callback_type=USERONLY&callback_user=6666&callback_comments=Comentários+vão+aqui
+
+Respostas de exemplo: (Os valores de "dados" para uma solicitação add_lead bem-sucedida são: phone_number, list_id, lead_id, gmt_offset_now)
+SUCESSO: add_lead LEAD FOI ADICIONADO - 7275551111|6666|999|193715|-4
+AVISO: add_lead ADICIONADO AO HOPPER - 7275551111|6666|193715|1677922
+
+SUCESSO: add_lead LEAD FOI ADICIONADO - 7275551111|6666|999|193716|-4
+AVISO: add_lead VALORES DE CAMPOS PERSONALIZADOS ADICIONADOS - 7275551111|1234|101
+AVISO: add_lead CAMPOS PERSONALIZADOS NÃO ADICIONADOS, CAMPOS PERSONALIZADOS DESATIVADOS - 7275551111|Y|0
+AVISO: add_lead CAMPOS PERSONALIZADOS NÃO ADICIONADOS, NENHUM CAMPO PERSONALIZADO DEFINIDO PARA ESTA LISTA - 7275551111|1234|101
+AVISO: add_lead CAMPOS PERSONALIZADOS NÃO ADICIONADOS, NENHUM CAMPO DEFINIDO - 7275551111|1234|101
+AVISO: add_lead NÚMEROS DE TELEFONE MULTI-ALT CARREGADOS - 3|6666|193716
+AVISO: add_lead NÃO ADICIONADO AO HOPPER, FORA DO HORÁRIO LOCAL - 7275551111|6666|193716|-4|0
+
+AVISO: add_lead RETORNO DE CHAMADA AGENDADO ADICIONADO - 1234|2011-09-29 12:00:01|CAMP DE TESTE|6666|SOMENTE PARA USUÁRIO|RETORNO DE CHAMADA
+AVISO: add_lead RETORNO DE CHAMADA AGENDADO NÃO ADICIONADO, USUÁRIO INVÁLIDO - 1234|TESTCAMP|6|
+AVISO: add_lead RETORNO DE CHAMADA AGENDADO NÃO ADICIONADO, CAMPANHA NÃO VÁLIDA - 1234|XYZ
+
+AVISO: opções NANPA add_lead desabilitadas, dados de prefixo NANPA não carregados - 0|6666
+
+ERRO: add_lead COMPRIMENTO DE NÚMERO DE TELEFONE INVÁLIDO - 72755|6666
+ERRO: add_lead PREFIXO DE NÚMERO DE TELEFONE INVÁLIDO - 72755|6666
+ERRO: add_lead NÚMERO DE TELEFONE INVÁLIDO CÓDIGO DE ÁREA - 72755|6666
+ERRO: add_lead NÚMERO DE TELEFONE INVÁLIDO PREFIXO DO CÓDIGO DE ÁREA NANPA - 7275551212|6666
+
+ERRO: add_lead O USUÁRIO NÃO TEM PERMISSÃO PARA ADICIONAR LEADS AO SISTEMA - 6666|0
+ERRO: add_lead NÃO É UMA LISTA DE ID PERMITIDA - 7275551212|98762
+ERRO: add_lead NÃO É UM ID DE LISTA DEFINIDO, LISTA EXISTE VERIFICAÇÃO HABILITADA - 7275551212|12344
+
+ERRO: NENHUMA FUNÇÃO ESPECIFICADA
+
+ERRO: add_lead NÚMERO DE TELEFONE DUPLICADO NA LISTA - 7275551111|101|8765444
+ERRO: add_lead NÚMERO DE TELEFONE DUPLICADO NAS LISTAS DE CAMPANHA - 7275551111|101|8765444|101
+ERRO: add_lead NÚMERO DE TELEFONE DUPLICADO NO SISTEMA - 7275551111|101|8765444|101
+ERRO: add_lead NÚMERO DE TELEFONE DUPLICADO NA LISTA - 7275551111|101|8765444|TELEFONE
+ERRO: add_lead NÚMERO DE TELEFONE DUPLICADO NAS LISTAS DE CAMPANHA - 7275551111|101|8765444|101|ALT
+ERRO: add_lead NÚMERO DE TELEFONE DUPLICADO NO SISTEMA - 7275551111|101|8765444|101|TELEFONE
+ERRO: add_lead TÍTULO DUPLICADO ALT_PHONE NA LISTA - 1234|7275551111|101|8765444
+ERRO: add_lead TÍTULO DUPLICADO ALT_PHONE NAS LISTAS DE CAMPANHA - 1234|7275551111|101|8765444|101
+ERRO: add_lead TÍTULO DUPLICADO ALT_PHONE NO SISTEMA - 1234|7275551111|101|8765444|101
+ERRO: add_lead NOME DUPLICADO TELEFONE NA LISTA - Bob|Smith|7275551113|101|8765444|101
+ERRO: add_lead NOME DUPLICADO TELEFONE NAS LISTAS DE CAMPANHA - Bob|Smith|7275551113|101|8765444|101
+ERRO: add_lead NOME DUPLICADO TELEFONE NO SISTEMA - Bob|Smith|7275551113|101|8765444|101
+
+
+
+
+
+-------------------------------------------------- ------------------------------
+update_lead - atualiza informações de leads nas tabelas vicidial_list e custom_
+
+NOTA: o usuário da API para esta função deve ter modify_leads definido como 1 e user_level
+      deve ser definido como 8 ou superior
+
+CAMPOS OBRIGATÓRIOS-
+lead_id - deve ser composto apenas por números, de 1 a 9 dígitos, não é necessário se usar vendor_lead_code ou phone_number
+vendor_lead_code - pode ser usado em vez de lead_id para corresponder a leads
+phone_number - pode ser usado em vez de lead_id ou vendor_lead_code para corresponder a leads
+fonte - descrição do que originou a chamada da API (máximo de 20 caracteres)
+
+CAMPOS DE CONFIGURAÇÕES-
+search_method - Você pode combinar as 3 opções a seguir neste campo para pesquisar os parâmetros desejados:
+				LEAD_ID, tentará encontrar uma correspondência com o lead_id
+				VENDOR_LEAD_CODE, tentará encontrar uma correspondência com o vendor_lead_code
+				PHONE_NUMBER, tentará encontrar uma correspondência com o phone_number
+			  Por exemplo, para pesquisar lead_id e vendor_lead_code: "&search_method=LEAD_ID_VENDOR_LEAD_CODE"
+			  A ordem de pesquisa NÃO é preservada, o ID do lead é sempre o primeiro, o código do lead do fornecedor é o segundo
+			  e o número de telefone é o último. O padrão é "LEAD_ID"
+search_location - Onde verificar registros no sistema, pode selecionar apenas um (o padrão é SYSTEM):
+				LISTA - verificar se há chumbo na mesma lista
+				CAMPANHA - verificar se há leads em todas as listas para a campanha desta lista
+				SISTEMA - verificar se há chumbo em todo o sistema
+			  Se nenhum list_id for definido, o search_location será assumido como SYSTEM
+insert_if_not_found - S ou N, tentará inserir como um NOVO lead se nenhuma correspondência for encontrada, o padrão é N.
+			A inserção exigirá phone_code, phone_number e list_id. lead_id será ignorado.
+			A maioria das opções add_lead que não estão disponíveis se você usar esta configuração nesta função
+registros - número de registros a serem atualizados se mais de 1 for encontrado (o padrão é '1' [lead carregado mais recentemente])
+custom_fields - Y ou N, o padrão é N. Define se a API aceitará dados de campos personalizados ao atualizar leads na tabela vicidial_list
+			Para que os campos personalizados sejam atualizados, basta adicionar o rótulo do campo como uma variável à string do URL
+			Por exemplo, se o field_label for "favorite_color", você adicionaria "&favorite_color=blue"
+no_update - S ou N, Definir como S não executará nenhuma atualização, mas apenas informará
+			se existir um lead que corresponda aos critérios de pesquisa, o padrão é N.
+delete_lead - S ou N, definir como S excluirá o lead da tabela vicidial_list, o padrão é N.
+delete_cf_data - S ou N, definir como S excluirá os dados dos campos personalizados para esse lead e redefinirá o entry_list_id, o padrão é N.
+reset_lead - S ou N, definir como S redefinirá o sinalizador chamado desde a última reinicialização do lead, o padrão é N.
+retorno de chamada - Y, N ou REMOVE, o padrão é N. Defina este lead como um retorno de chamada agendado. REMOVE excluirá a entrada de retorno de chamada agendada
+callback_status - 1-6 caracteres, status de retorno de chamada a ser usado, o padrão é CALLBK (o status vicidial_list será definido como CBHOLD para bloquear)
+callback_datetime - AAAA-MM-DD+HH:MM:SS, data e hora do retorno de chamada agendado. OBRIGATÓRIO se o retorno de chamada estiver definido.
+                        'NOW' pode ser usado para data e hora atuais. 'xDAYS' também pode ser usado onde 'x' é substituído por um número de dias no futuro
+callback_type - USERONLY ou ANYONE, o padrão é ANYONE
+callback_user - ID do usuário ao qual o retorno de chamada USERONLY é atribuído
+callback_comments - Comentários opcionais para aparecer quando o retorno de chamada for chamado de volta
+update_phone_number - S ou N, configuração opcional para atualizar o campo phone_number, o padrão é N.
+add_to_hopper - S ou N, o padrão é N
+remove_from_hopper - S ou N, o padrão é N
+hopper_priority - 99 a -99, quanto maior o número, maior a prioridade, o padrão é 0
+hopper_local_call_time_check - S ou N, o padrão é N. Valide o tempo de chamada local e/ou o tempo de chamada do estado antes de inserir o cabo no funil
+list_exists_check - S ou N, o padrão é N. Se o list_id_field não for uma lista definida no sistema, ocorrerá ERRO e o lead não será atualizado.
+archived_lead - S ou N, definir como S consultará apenas os leads vicidial_list_archive para pesquisa, atualizações e detalhes de leads; o padrão é N.
+
+CAMPOS EDITÁVEIS-
+user_field - 1-20 caracteres, isso atualiza o campo 'user' na tabela vicidial_list
+list_id_field - 3-12 dígitos, isso atualiza o campo 'list_id' na tabela vicidial_list
+status - 1-6 caracteres, sem pontuação ou espaços
+vendor_lead_code - 1-20 caracteres
+source_id - 1-50 caracteres
+gmt_offset_now - substituído pela pesquisa automática da parte phone_code e area_code do número de telefone, se aplicável
+título - 1-4 caracteres
+first_name - 1-30 caracteres
+middle_initial - 1 caractere
+sobrenome - 1-30 caracteres
+endereço1 - 1-100 caracteres
+endereço2 - 1-100 caracteres
+endereço3 - 1-100 caracteres
+cidade - 1-50 caracteres
+estado - 2 caracteres
+província - 1-50 caracteres
+postal_code - 1-10 caracteres
+country_code - 3 caracteres
+gênero - U, M, F (Indefinido, Masculino, Feminino) - padrão é 'U'
+data_de_nascimento - AAAA-MM-DD
+alt_phone - 1-12 caracteres
+e-mail - 1-70 caracteres
+frase_de_segurança - 1-100 caracteres
+comentários - 1-255 caracteres
+classificação - 1-5 dígitos
+proprietário - 1-20 caracteres (ID do usuário, território ou grupo de usuários)
+called_count - apenas dígitos, o número de tentativas de discagem do lead
+phone_code - somente dígitos, pode ter de 1 a 4 dígitos
+entry_list_id - AVISO! USE SOMENTE SE VOCÊ SABE O QUE ESTÁ FAZENDO, PODE QUEBRAR CAMPOS PERSONALIZADOS! (deve ser tudo números, 3-12 dígitos, não funcionará se custom_fields estiver definido como Y)
+force_entry_list_id - AVISO! USE SOMENTE SE VOCÊ SABE O QUE ESTÁ FAZENDO, PODE QUEBRAR CAMPOS PERSONALIZADOS! (deve ser tudo números, 3-12 dígitos, substituirá entry_list_id para este valor em todas as consultas de campos personalizados executadas por este comando)
+NOTAS:
+ - para definir um campo como vazio(''), defina-o como --BLANK--, ou seja, "&province=--BLANK--"
+ - não use caracteres especiais como apóstrofos, aspas duplas ou e-feras
+
+Exemplo de sequências de URL para chamadas de API:
+http://server/vicidial/non_agent_api.php?source=test&user=6666&pass=1234&function=update_lead&lead_id=27&last_name=SMITH
+
+http://server/vicidial/non_agent_api.php?source=test&user=6666&pass=1234&function=update_lead&search_method=CÓDIGO_DE_LIDERANÇA_DO_FORNECEDOR&código_de_lideranÇa_do_fornecedor=1000019&último_nome=JOHNSON
+
+http://server/vicidial/non_agent_api.php?source=test&user=6666&pass=1234&function=update_lead&search_method=PHONE_NUMBER&records=2&list_id=8107&search_location=LIST&phone_number=9999000019&last_name=WILSON
+
+http://server/vicidial/non_agent_api.php?source=test&user=6666&pass=1234&function=update_lead&lead_id=405794&last_name=SMITH&city=Chicago&custom_fields=Y&favorite_color=blue
+
+http://server/vicidial/non_agent_api.php?source=test&user=6666&pass=1234&function=update_lead&search_location=LIST&search_method=PHONE_NUMBER&insert_if_not_found=Y&phone_number=9999000029&phone_code=1&list_id=999&first_name=Bob&last_name=Wilson&city=Chicago&custom_fields=Y&favorite_color=red
+
+http://server/vicidial/non_agent_api.php?source=test&user=6666&pass=1234&function=update_lead&insert_if_not_found=Y&search_method=VENDOR_LEAD_CODE_PHONE_NUMBER&vendor_lead_code=89763545&phone_number=7275551212&phone_code=1&list_id=999&first_name=Bob&last_name=Wilson&custom_fields=Y&favorite_color=blue
+
+http://server/vicidial/non_agent_api.php?source=test&user=6666&pass=1234&function=update_lead&search_location=LIST&search_method=VENDOR_LEAD_CODE_PHONE_NUMBER&insert_if_not_found=Y&phone_number=9999000029&phone_code=1&list_id=999&first_name=Bob&last_name=Wilson&city=Chicago&custom_fields=Y&favorite_color=red&user_field=1008&list_id_field=107&status=OLD
+
+http://server/vicidial/non_agent_api.php?source=test&user=6666&pass=1234&function=update_lead&lead_id=27&no_update=Y
+
+http://server/vicidial/non_agent_api.php?source=test&user=6666&pass=1234&function=update_lead&lead_id=27&delete_lead=Y
+
+http://server/vicidial/non_agent_api.php?source=test&user=6666&pass=1234&function=update_lead&lead_id=27&delete_lead=Y&custom_fields=Y
+
+http://server/vicidial/non_agent_api.php?source=test&user=6666&pass=1234&function=update_lead&lead_id=27&delete_cf_data=Y
+
+http://server/vicidial/non_agent_api.php?source=test&user=6666&pass=1234&function=update_lead&lead_id=406757&campaign_id=TESTCAMP&callback=Y&callback_status=CALLBK&callback_datetime=NOW&callback_type=USERONLY&callback_user=1028&callback_comments=Comentários+vá+aqui+novamente
+
+http://server/vicidial/non_agent_api.php?source=test&user=6666&pass=1234&function=update_lead&search_location=SYSTEM&search_method=PHONE_NUMBER&phone_number=9998887112&no_update=Y&add_to_hopper=Y&hopper_priority=99&hopper_local_call_time_check=Y
+
+Respostas de exemplo:
+SUCESSO: update_lead LEAD FOI ATUALIZADO - 6666|193716
+AVISO: update_lead VALORES DE CAMPOS PERSONALIZADOS ATUALIZADOS - 7275551111|1234|101
+AVISO: update_lead CAMPOS PERSONALIZADOS NÃO ATUALIZADOS, CAMPOS PERSONALIZADOS DESATIVADOS - 7275551111|Y|0
+AVISO: update_lead CAMPOS PERSONALIZADOS NÃO ATUALIZADOS, NENHUM CAMPO PERSONALIZADO DEFINIDO PARA ESTA LISTA - 7275551111|1234|101
+AVISO: update_lead CAMPOS PERSONALIZADOS NÃO ATUALIZADOS, NENHUM CAMPO DEFINIDO - 7275551111|1234|101
+
+AVISO: update_lead RETORNO DE CHAMADA AGENDADO ATUALIZADO - 1234|2011-09-29 12:00:01|CAMP DE TESTE|6666|SOMENTE PARA USUÁRIO|RETORNO DE CHAMADA
+AVISO: update_lead RETORNO DE CHAMADA AGENDADO NÃO ATUALIZADO, NENHUM CAMPO ESPECIFICADO - 1234|
+AVISO: update_lead RETORNO DE CHAMADA AGENDADO ADICIONADO - 1234|2011-09-29 12:00:01|CAMP DE TESTE|6666|SOMENTE PARA USUÁRIO|RETORNO DE CHAMADA
+AVISO: update_lead RETORNO DE CHAMADA AGENDADO NÃO ADICIONADO, USUÁRIO INVÁLIDO - 1234|TESTCAMP|6|
+AVISO: update_lead RETORNO DE CHAMADA AGENDADO NÃO ADICIONADO, CAMPANHA NÃO VÁLIDA - 1234|XYZ
+
+AVISO: update_lead NENHUMA CORRESPONDÊNCIA ENCONTRADA NO SISTEMA - 6666|4567|897654327|7275551212
+SUCESSO: update_lead LEAD FOI ADICIONADO - 7275551111|6666|999|193716|-4
+
+SUCESSO: update_lead LEAD FOI EXCLUÍDO - 7275551111|6666|999|193716|-4
+AVISO: update_lead ENTRADA DE CAMPOS PERSONALIZADOS EXCLUÍDA 1 - 7275551111|6666|999|193716|-4
+AVISO: DADOS DE CAMPOS PERSONALIZADOS update_lead FORAM EXCLUÍDOS - 6666|193716|1|1
+
+AVISO: update_lead LEADS ENCONTRADOS NO SISTEMA: |6666|1010542|12345678901234|9998887112|3333444|0
+					       (usuário|id_lead|código_lead_do_fornecedor|telefone |id_lista|id_lista_de_entradas)
+
+AVISO: update_lead ADICIONADO AO HOPPER - 7275551111|6666|193715|1677922
+AVISO: update_lead NÃO ADICIONADO AO HOPPER - 7275551111|6666|193715|1677922
+AVISO: update_lead NÃO ADICIONADO AO HOPPER, FORA DO HORÁRIO LOCAL - 7275551111|193715|-5|0|6666
+AVISO: update_lead NÃO ADICIONADO AO HOPPER, LEAD NÃO ENCONTRADO - 7275551111|193715|6666
+AVISO: update_lead NÃO ADICIONADO AO HOPPER, O LEAD JÁ ESTÁ NO HOPPER - 7275551111|193715|6666
+AVISO: update_lead REMOVIDO DO HOPPER - 7275551111|193715|PRONTO|6666
+AVISO: update_lead NÃO REMOVIDO DO HOPPER - 7275551111|193715|DNC|6666
+AVISO: update_lead NÃO FOI REMOVIDO DO HOPPER, O LEAD NÃO ESTÁ NO HOPPER - 7275551111|193715|6666
+
+ERRO: update_lead DADOS INVÁLIDOS PARA INSERÇÃO DE LEAD - 6666|||
+ERRO: update_lead NENHUMA CORRESPONDÊNCIA ENCONTRADA NO SISTEMA - 6666|||
+ERRO: update_lead NENHUM MÉTODO DE PESQUISA VÁLIDO - 6666|SISTEMA|||
+ERRO: update_lead NÃO É UM ID DE LISTA DEFINIDO, LISTA EXISTE VERIFICAÇÃO HABILITADA - 6666|139
+
+ERRO: update_lead O USUÁRIO NÃO TEM PERMISSÃO PARA ATUALIZAR LEADS NO SISTEMA - 6666|0
+ERRO: update_lead NÃO É UMA LISTA DE ID PERMITIDA, PESQUISA - 7275551212|98762
+ERRO: update_lead NÃO É UMA LISTA DE ID PERMITIDA, RESULTADOS - 7275551212|98762
+ERRO: update_lead NÃO É UMA LISTA DE ID PERMITIDA, INSERIR - 7275551212|98762
+
+
+
+
+
+-------------------------------------------------- ------------------------------
+batch_update_lead - atualiza vários leads em vicidial_list com um único conjunto de valores de campo (opções de campo limitadas)
+
+NOTA: o usuário da API para esta função deve ter modify_leads definido como 1 e user_level deve ser definido como 8 ou superior
+NOTA: Esta função primeiro encontrará quais leads existem e então atualizará todos eles de uma vez. Como tal, não haverá entradas de log de administração associadas a cada lead individual modificado
+
+CAMPOS OBRIGATÓRIOS-
+lead_ids - devem ser todos números e vírgulas, números de 1 a 9 dígitos separados por uma vírgula
+fonte - descrição do que originou a chamada da API (máximo de 20 caracteres)
+
+CAMPOS DE CONFIGURAÇÕES-
+list_exists_check - S ou N, o padrão é N. Se o list_id_field não for uma lista definida no sistema, ocorrerá ERRO e os leads não serão atualizados.
+reset_lead - S ou N, definir como S redefinirá o sinalizador chamado desde a última reinicialização do lead, o padrão é N.
+registros - número máximo de registros a serem atualizados (o padrão é '100' [leads criados mais recentemente])
+archived_lead - S ou N, definir como S consultará apenas os leads vicidial_list_archive para pesquisa, atualizações e detalhes de leads; o padrão é N.
+
+CAMPOS EDITÁVEIS-
+user_field - 1-20 caracteres, isso atualiza o campo 'user' na tabela vicidial_list
+list_id_field - 3-12 dígitos, isso atualiza o campo 'list_id' na tabela vicidial_list
+status - 1-6 caracteres, sem pontuação ou espaços
+vendor_lead_code - 1-20 caracteres
+source_id - 1-50 caracteres
+gmt_offset_now - substituído pela pesquisa automática da parte phone_code e area_code do número de telefone, se aplicável
+título - 1-4 caracteres
+first_name - 1-30 caracteres
+middle_initial - 1 caractere
+sobrenome - 1-30 caracteres
+endereço1 - 1-100 caracteres
+endereço2 - 1-100 caracteres
+endereço3 - 1-100 caracteres
+cidade - 1-50 caracteres
+estado - 2 caracteres
+província - 1-50 caracteres
+postal_code - 1-10 caracteres
+country_code - 3 caracteres
+gênero - U, M, F (Indefinido, Masculino, Feminino) - padrão é 'U'
+data_de_nascimento - AAAA-MM-DD
+alt_phone - 1-12 caracteres
+e-mail - 1-70 caracteres
+frase_de_segurança - 1-100 caracteres
+comentários - 1-255 caracteres
+classificação - 1-5 dígitos
+proprietário - 1-20 caracteres (ID do usuário, território ou grupo de usuários)
+called_count - apenas dígitos, o número de tentativas de discagem do lead
+phone_code - somente dígitos, pode ter de 1 a 4 dígitos
+
+Exemplo de sequências de URL para chamadas de API:
+http://server/vicidial/non_agent_api.php?source=test&user=6666&pass=1234&function=batch_update_lead&lead_ids=2345,2346&list_id_field=138
+
+Respostas de exemplo:
+SUCESSO: batch_update_lead OS LEADS FORAM ATUALIZADOS - 6666|2|2345,2346
+ERRO: batch_update_lead O USUÁRIO NÃO TEM PERMISSÃO PARA ATUALIZAR LEADS NO SISTEMA - 6666|0|
+ERRO: batch_update_lead NENHUM LEAD DEFINIDO - 6666|
+ERRO: batch_update_lead NÃO É UMA LISTA DE ID PERMITIDA - 6666|138
+ERRO: batch_update_lead NÃO É UM ID DE LISTA DEFINIDO, LISTA EXISTE VERIFICAÇÃO HABILITADA - 6666|138
+ERRO: batch_update_lead NENHUM LEAD ENCONTRADO - 6666|0|2345,2346
+
+
+
+
+
+-------------------------------------------------- ------------------------------
+add_user - adiciona um usuário ao sistema
+
+NOTA: o usuário da API para esta função deve ter o user_level definido como 8 ou superior e "modificar usuários" habilitado
+
+CAMPOS OBRIGATÓRIOS-
+agent_user - 2-20 caracteres (para envio gerado automaticamente 'AUTOGENERATED')
+agent_pass - 1-20 caracteres
+agent_user_level - 1 a 9, apenas um dígito
+agent_full_name - 1-50 caracteres
+agent_user_group - 1-20 caracteres, deve ser um grupo de usuários válido
+
+CAMPOS OPCIONAIS-
+phone_login - 1-20 caracteres
+phone_pass - 1-20 caracteres
+teclas de atalho_ativas - 0 ou 1
+voicemail_id - 1-10 dígitos
+e-mail - 1-100 caracteres
+custom_one - 1-100 caracteres
+custom_two - 1-100 caracteres
+custom_three - 1-100 caracteres
+custom_four - 1-100 caracteres
+custom_five - 1-100 caracteres
+wrapup_seconds_override - número de -1 a 9999
+agent_choose_ingroups - 0 ou 1, padrão 1
+agent_choose_blended - 0 ou 1, padrão 1
+closer_default_blended - 0 ou 1, padrão 0
+in_groups - lista delimitada por barras verticais de grupos de entrada a serem selecionados para o usuário "SALESLINE|SUPPORT"
+
+NOTA: Esta função não funciona com a integração Vtiger
+
+Exemplo de sequências de URL para chamadas de API:
+http://server/vicidial/non_agent_api.php?source=test&function=add_user&user=6666&pass=1234&agent_user=1000&agent_pass=9999&agent_user_level=1&agent_full_name=Testing+Person&agent_user_group=AGENTES
+http://server/vicidial/non_agent_api.php?source=test&function=add_user&user=6666&pass=1234&agent_user=1000&agent_pass=9999&agent_user_level=1&agent_full_name=Testing+Person&agent_user_group=AGENTS&phone_login=100&phone_pass=test&hotkeys_active=1&voicemail_id=&custom_one=jjjj&custom_two=yyyy&custom_three=kkk&custom_four=wwww&custom_five=hhhh
+
+Respostas de exemplo:
+ERRO: add_user O USUÁRIO NÃO TEM PERMISSÃO PARA ADICIONAR USUÁRIOS - 6666|0
+ERRO: add_user VOCÊ DEVE USAR TODOS OS CAMPOS OBRIGATÓRIOS - 6666|1000||||
+ERRO: add_user O USUÁRIO NÃO TEM PERMISSÃO PARA ADICIONAR USUÁRIOS NESTE NÍVEL DE USUÁRIO - 6666|8
+ERRO: add_user GRUPO DE USUÁRIOS NÃO EXISTE - 6666|ADFHR
+ERRO: add_user USUÁRIO JÁ EXISTE - 6666|6666
+SUCESSO: add_user USUÁRIO FOI ADICIONADO - 6666|1000|1234|8|Testing+Person|AGENTS
+
+
+
+
+
+
+-------------------------------------------------- ------------------------------
+copy_user - copia um usuário existente no sistema para um novo ID de usuário e nome
+
+NOTA: o usuário da API para esta função deve ter o user_level definido como 8 ou superior e "modificar usuários" habilitado
+
+CAMPOS OBRIGATÓRIOS-
+agent_user - 2-20 caracteres (para envio gerado automaticamente 'AUTOGENERATED')
+agent_pass - 1-20 caracteres
+agent_full_name - 1-50 caracteres
+source_user - 2-20 caracteres (deve ser um ID de usuário existente no sistema)
+
+NOTA: Esta função não funciona com a integração Vtiger
+
+Exemplo de sequências de URL para chamadas de API:
+http://server/vicidial/non_agent_api.php?source=test&function=copy_user&user=6666&pass=1234&agent_user=1000&agent_pass=9999&source_user=5555&agent_full_name=Copy+Person
+
+Respostas de exemplo:
+ERRO: copy_user O USUÁRIO NÃO TEM PERMISSÃO PARA COPIAR USUÁRIOS - 6666|0
+ERRO: copy_user VOCÊ DEVE USAR TODOS OS CAMPOS OBRIGATÓRIOS - 6666|1000|5555|||
+ERRO: copy_user O USUÁRIO NÃO TEM PERMISSÃO PARA COPIAR USUÁRIOS NESTE NÍVEL DE USUÁRIO - 9|8
+ERRO: copy_user USUÁRIO DE ORIGEM NÃO EXISTE - 6666|5555
+ERRO: copy_user GRUPO DE USUÁRIOS NÃO EXISTE - 6666|ADFHR
+ERRO: copy_user USUÁRIO JÁ EXISTE - 6666|6666
+SUCESSO: copy_user USUÁRIO FOI COPIADO - 6666|1000|1234|Testing+Person|5555
+
+
+
+
+
+-------------------------------------------------- ------------------------------
+update_user - atualiza ou exclui uma entrada de usuário já existente no sistema
+
+NOTA: o usuário da API para esta função deve ter o user_level definido como 8 ou superior e "modificar usuário" habilitado
+
+CAMPOS OBRIGATÓRIOS-
+agent_user - 2-20 caracteres
+
+CAMPOS OPCIONAIS-
+agent_pass - 1-20 caracteres
+agent_user_level - 1 a 9, apenas um dígito
+agent_full_name - 1-50 caracteres
+agent_user_group - 1-20 caracteres, deve ser um grupo de usuários válido
+phone_login - 1-20 caracteres
+phone_pass - 1-20 caracteres
+teclas de atalho_ativas - 0 ou 1
+voicemail_id - 1-10 dígitos
+e-mail - 1-100 caracteres
+custom_one - 1-100 caracteres
+custom_two - 1-100 caracteres
+custom_three - 1-100 caracteres
+custom_four - 1-100 caracteres
+custom_five - 1-100 caracteres
+ativo - 'S' ou 'N'
+wrapup_seconds_override - número de -1 a 9999
+campaign_rank - de -9 para 9, isso mudará a classificação da campanha para este usuário em todas as campanhas
+campaign_grade - de 1 a 10, isso mudará a nota da campanha para este usuário em todas as campanhas
+ingroup_rank - de -9 para 9, isso mudará a classificação do grupo para este usuário em todos os grupos
+ingroup_grade - de 1 a 10, isso mudará a nota do grupo para este usuário em todos os grupos
+camp_rg_only - 0 ou 1, isso definirá apenas uma classificação/classificação de campanha para este usuário, requer que campaign_id seja definido
+campaign_id - necessário apenas para uso com camp_rg_only
+ingrp_rg_only - 0 ou 1, isso definirá apenas uma classificação/classificação de grupo de entrada para este usuário, requer que group_id seja definido
+group_id - necessário somente para uso com ingrp_rg_only
+reset_password - 0 ou 8+ dígitos, isso redefinirá a senha do usuário para uma senha aleatória desse tamanho e enviará a nova senha ao usuário por e-mail
+			  NOTA: o campo 'email' é obrigatório se o e-mail atual do usuário não for um endereço de e-mail válido
+
+Exemplo de sequências de URL para chamadas de API:
+http://server/vicidial/non_agent_api.php?source=test&function=update_user&user=6666&pass=1234&agent_user=2424&agent_pass=9876
+http://server/vicidial/non_agent_api.php?source=test&function=update_user&user=6666&pass=1234&agent_user=2424&agent_user_level=3
+http://server/vicidial/non_agent_api.php?source=test&function=update_user&user=6666&pass=1234&agent_user=2424&agent_full_name=Testing&hotkeys_active=1&active=Y
+http://server/vicidial/non_agent_api.php?source=test&function=update_user&user=6666&pass=1234&agent_user=2424&campaign_rank=3&campaign_grade=4
+http://server/vicidial/non_agent_api.php?source=test&function=update_user&user=6666&pass=1234&agent_user=2424&ingroup_rank=3&ingroup_grade=4&ingrp_rg_only=1&group_id=TEST_IN
+http://server/vicidial/non_agent_api.php?source=test&function=update_user&user=6666&pass=1234&agent_user=2424&reset_password=12&email=info@vicidial.com
+
+Respostas de exemplo:
+ERRO: update_user O USUÁRIO NÃO TEM PERMISSÃO PARA ATUALIZAR USUÁRIOS - 6666|0
+ERRO: update_user O USUÁRIO NÃO TEM PERMISSÃO PARA EXCLUIR USUÁRIOS - 6666|7878
+ERRO: update_user VOCÊ DEVE USAR TODOS OS CAMPOS OBRIGATÓRIOS - 6666||
+ERRO: update_user USUÁRIO NÃO EXISTE - 6666|78789
+ERRO: update_user O USUÁRIO NÃO TEM PERMISSÃO PARA ATUALIZAR ESTE USUÁRIO - 6666|7878
+ERRO: update_user VOCÊ DEVE USAR UM NOME COMPLETO VÁLIDO, ESTE É UM CAMPO OPCIONAL - 6666|
+ERRO: update_user VOCÊ DEVE USAR UM NÍVEL DE USUÁRIO VÁLIDO, ESTE É UM CAMPO OPCIONAL - 6666|0|9|1
+ERRO: update_user VOCÊ DEVE USAR UM GRUPO DE USUÁRIO VÁLIDO, ESTE É UM CAMPO OPCIONAL - 6666|FAKEGROUP|0
+ERRO: update_user VOCÊ DEVE USAR UM LOGIN DE TELEFONE VÁLIDO, ESTE É UM CAMPO OPCIONAL - 6666|fakephone|0|0
+ERRO: update_user VOCÊ DEVE USAR UMA SENHA DE TELEFONE VÁLIDA, ESTE É UM CAMPO OPCIONAL - 6666|0
+ERRO: update_user VOCÊ DEVE USAR UMA CONFIGURAÇÃO DE TECLAS DE ATALHO VÁLIDA, ESTE É UM CAMPO OPCIONAL - 6666|2
+ERRO: update_user VOCÊ DEVE USAR UM ID DE CORREIO DE VOZ VÁLIDO, ESTE É UM CAMPO OPCIONAL - 6666
+ERRO: update_user VOCÊ DEVE USAR UM E-MAIL VÁLIDO, ESTE É UM CAMPO OPCIONAL - 6666
+ERRO: update_user VOCÊ DEVE USAR UM PERSONALIZADO VÁLIDO, ESTE É UM CAMPO OPCIONAL - 6666
+ERRO: update_user VOCÊ DEVE USAR UM CUSTOM DOIS VÁLIDO, ESTE É UM CAMPO OPCIONAL - 6666
+ERRO: update_user VOCÊ DEVE USAR UM TRÊS PERSONALIZADO VÁLIDO, ESTE É UM CAMPO OPCIONAL - 6666
+ERRO: update_user VOCÊ DEVE USAR UM QUATRO PERSONALIZADO VÁLIDO, ESTE É UM CAMPO OPCIONAL - 6666
+ERRO: update_user VOCÊ DEVE USAR UM CINCO PERSONALIZADO VÁLIDO, ESTE É UM CAMPO OPCIONAL - 6666
+ERRO: update_user ACTIVE DEVE SER S OU N, ESTE É UM CAMPO OPCIONAL - 6666
+ERRO: update_user wrapup_seconds_override DEVE SER UM DÍGITO VÁLIDO ENTRE -1 E 9999, ESTE É UM CAMPO OPCIONAL - 6666|-2
+ERRO: update_user VOCÊ DEVE USAR UMA CLASSIFICAÇÃO DE CAMPANHA VÁLIDA, ESTE É UM CAMPO OPCIONAL - 6666|0
+ERRO: update_user VOCÊ DEVE USAR UMA NOTA DE CAMPANHA VÁLIDA, ESTE É UM CAMPO OPCIONAL - 6666|0
+ERRO: update_user VOCÊ DEVE USAR UMA CLASSIFICAÇÃO VÁLIDA NO GRUPO, ESTE É UM CAMPO OPCIONAL - 6666|0
+ERRO: update_user VOCÊ DEVE USAR UMA NOTA VÁLIDA NO GRUPO, ESTE É UM CAMPO OPCIONAL - 6666|0
+ERRO: update_user NENHUMA ATUALIZAÇÃO DEFINIDA - 6666|0
+AVISO: update_user AS CLASSIFICAÇÕES/NOTAS DA CAMPANHA DO USUÁRIO FORAM ATUALIZADAS - 6666|9|10|TESTCAMP|1
+AVISO: update_user AS CLASSIFICAÇÕES/NOTAS DOS USUÁRIOS NO GRUPO FORAM ATUALIZADAS - 6666|9|10|TEST_IN|1
+AVISO: update_user FALHA NA REDEFINIÇÃO DA SENHA DO USUÁRIO: NENHUM E-MAIL VÁLIDO FORNECIDO - 6666|email@doman
+AVISO: update_user FALHA NA REDEFINIÇÃO DA SENHA DO USUÁRIO: FALHA NO E-MAIL - 6666|info@vicidial.com|email-error
+AVISO: update_user update_user A SENHA DO USUÁRIO FOI REDEFINIDA - 6666|info@vicidial.com
+SUCESSO: update_user USUÁRIO FOI ATUALIZADO - 6666|7878
+SUCESSO: update_user USUÁRIO FOI EXCLUÍDO - 6666|7878
+
+
+
+
+
+-------------------------------------------------- ------------------------------
+update_remote_agent - atualiza a entrada do agente remoto no sistema
+
+NOTA: o usuário da API para esta função deve ter o user_level definido como 8 ou superior e "modificar agentes remotos" habilitado
+
+CAMPOS OBRIGATÓRIOS-
+agent_user - 2-20 caracteres
+
+CAMPOS OPCIONAIS-
+status - somente 'ATIVO' ou 'INATIVO'
+campaign_id - 1-8 caracteres, deve ser um ID de campanha válido
+número_de_linhas - 1-20 dígitos
+
+Exemplo de sequências de URL para chamadas de API:
+http://server/vicidial/non_agent_api.php?source=test&function=update_remote_agent&user=6666&pass=1234&agent_user=2424&number_of_lines=1&campaign_id=TESTCAMP
+http://server/vicidial/non_agent_api.php?source=test&function=update_remote_agent&user=6666&pass=1234&agent_user=2424&status=INACTIVE
+
+Respostas de exemplo:
+ERRO: update_remote_agent O USUÁRIO NÃO TEM PERMISSÃO PARA ATUALIZAR AGENTES REMOTOS - 6666|0
+ERRO: update_remote_agent VOCÊ DEVE USAR TODOS OS CAMPOS OBRIGATÓRIOS - 6666||
+ERRO: update_remote_agent AGENTE REMOTO NÃO EXISTE - 6666|78789
+ERRO: update_remote_agent O USUÁRIO NÃO TEM PERMISSÃO PARA ATUALIZAR ESTE AGENTE REMOTO - 6666
+ERRO: update_remote_agent VOCÊ DEVE USAR UM NÚMERO VÁLIDO DE LINHAS, ESTE É UM CAMPO OPCIONAL - 6666|0
+ERRO: update_remote_agent VOCÊ DEVE USAR UM ID DE CAMPANHA VÁLIDO, ESTE É UM CAMPO OPCIONAL - 6666|TESTE|0
+ERRO: O STATUS DO update_remote_agent DEVE SER ATIVO OU INATIVO, ESTE É UM CAMPO OPCIONAL - 6666|Y
+ERRO: update_remote_agent NENHUMA ATUALIZAÇÃO DEFINIDA - 6666|0
+AVISO: update_remote_agent AGENTE REMOTO JÁ ESTÁ ATIVO - 6666|7878
+AVISO: update_remote_agent AGENTE REMOTO JÁ ESTÁ INATIVO - 6666|7878
+SUCESSO: update_remote_agent USUÁRIO FOI ATUALIZADO - 6666|7878
+
+
+
+
+
+-------------------------------------------------- ------------------------------
+add_group_alias - adiciona alias de grupo ao sistema
+
+NOTA: o usuário da API para esta função deve ter o user_level definido como 8 ou superior e o "acesso de administrador ast" habilitado
+
+CAMPOS OBRIGATÓRIOS-
+número_de_identificação_do_chamador - 6-20 caracteres
+
+CAMPOS OPCIONAIS-
+group_alias_id - 3-30 caracteres, sem espaços ou pontuação permitidos, se não for definido, caller_id_number é usado
+group_alias_name - 3-50 caracteres, se não for definido, caller_id_number é usado
+caller_id_name - 6-20 caracteres, se não definido '' é o padrão
+ativo - 'S' ou 'N', se não definido 'S' é o padrão
+admin_user_group - um grupo de usuários válido ou '---ALL---' é usado como padrão
+
+Exemplo de sequências de URL para chamadas de API:
+http://server/vicidial/non_agent_api.php?source=test&function=add_group_alias&user=6666&pass=1234&caller_id_number=7275551212
+http://server/vicidial/non_agent_api.php?source=test&function=add_group_alias&user=6666&pass=1234&caller_id_number=7275551212&group_alias_id=test_group_alias&group_alias_name=test+group+alias
+
+Respostas de exemplo:
+ERRO: add_group_alias O USUÁRIO NÃO TEM PERMISSÃO PARA ADICIONAR ALIASES DE GRUPO - 6666|0
+ERRO: add_group_alias VOCÊ DEVE USAR TODOS OS CAMPOS OBRIGATÓRIOS - 6666|||1000
+ERRO: add_group_alias ALIAS DE GRUPO JÁ EXISTE - 6666|7275551212
+SUCESSO: add_group_alias ALIAS DE GRUPO FOI ADICIONADO - 6666|7275551212|test_group_alias|alias de grupo de teste
+
+
+
+
+
+-------------------------------------------------- ------------------------------
+add_dnc_phone - adiciona número de telefone a uma lista DNC no sistema
+
+NOTA: o usuário da API para esta função deve ter o user_level definido como 8 ou superior e "modificar listas" habilitado
+
+CAMPOS OBRIGATÓRIOS-
+phone_number - 6-20 caracteres
+campaign_id - 2 a 30 caracteres, deve ser um ID de campanha válido ou "SYSTEM_INTERNAL" para a lista DNC interna
+
+Exemplo de sequências de URL para chamadas de API:
+http://server/vicidial/non_agent_api.php?source=test&function=add_dnc_phone&user=6666&pass=1234&phone_number=7275551212&campaign_id=TESTCAMP
+http://server/vicidial/non_agent_api.php?source=test&function=add_dnc_phone&user=6666&pass=1234&phone_number=7275551212&campaign_id=SYSTEM_INTERNAL
+
+Respostas de exemplo:
+ERRO: add_dnc_phone O USUÁRIO NÃO TEM PERMISSÃO PARA ADICIONAR NÚMEROS DNC - 6666|0
+ERRO: add_dnc_phone VOCÊ DEVE USAR TODOS OS CAMPOS OBRIGATÓRIOS - 6666|||1000
+ERRO: add_dnc_phone NÚMERO DNC JÁ EXISTE - 6666|7275551212
+SUCESSO: add_dnc_phone NÚMERO DNC FOI ADICIONADO - 6666|7275551212|TESTCAMP
+
+
+
+
+
+-------------------------------------------------- ------------------------------
+delete_dnc_phone - remove o número de telefone de uma lista DNC no sistema
+
+NOTA: o usuário da API para esta função deve ter o user_level definido como 8 ou superior e "modificar listas" habilitado e "Excluir de listas DNC" habilitado
+
+CAMPOS OBRIGATÓRIOS-
+phone_number - 6-20 caracteres
+campaign_id - 2 a 30 caracteres, deve ser um ID de campanha válido ou "SYSTEM_INTERNAL" para a lista DNC interna
+
+Exemplo de sequências de URL para chamadas de API:
+http://server/vicidial/non_agent_api.php?source=test&function=delete_dnc_phone&user=6666&pass=1234&phone_number=7275551212&campaign_id=TESTCAMP
+http://server/vicidial/non_agent_api.php?source=test&function=delete_dnc_phone&user=6666&pass=1234&phone_number=7275551212&campaign_id=SYSTEM_INTERNAL
+
+Respostas de exemplo:
+ERRO: delete_dnc_phone O USUÁRIO NÃO TEM PERMISSÃO PARA EXCLUIR NÚMEROS DNC - 6666|0
+ERRO: delete_dnc_phone VOCÊ DEVE USAR TODOS OS CAMPOS OBRIGATÓRIOS - 6666|||1000
+ERRO: delete_dnc_phone NÚMERO DNC NÃO EXISTE - 6666|7275551212
+SUCESSO: delete_dnc_phone NÚMERO DNC FOI EXCLUÍDO - 6666|7275551212|TESTCAMP
+
+
+
+
+
+-------------------------------------------------- ------------------------------
+add_fpg_phone - adiciona número de telefone a um grupo de telefone de filtro no sistema
+
+NOTA: o usuário da API para esta função deve ter o user_level definido como 8 ou superior e "modificar listas" habilitado
+
+CAMPOS OBRIGATÓRIOS-
+phone_number - 6-20 caracteres
+grupo - 2 a 30 caracteres, deve ser um ID de grupo de telefone de filtro válido no sistema
+
+Exemplo de sequências de URL para chamadas de API:
+http://server/vicidial/non_agent_api.php?source=test&function=add_fpg_phone&user=6666&pass=1234&phone_number=7275551212&group=TEST_IN_FILTER
+
+Respostas de exemplo:
+ERRO: add_fpg_phone O USUÁRIO NÃO TEM PERMISSÃO PARA ADICIONAR NÚMEROS DE GRUPO DE TELEFONE DE FILTRO - 6666|0
+ERRO: add_fpg_phone VOCÊ DEVE USAR TODOS OS CAMPOS OBRIGATÓRIOS - 6666|||1000
+ERRO: add_fpg_phone FILTRO GRUPO DE TELEFONE NÃO EXISTE - 6666|TEST_IN_FILTER2
+ERRO: add_fpg_phone FILTRO NÚMERO DE GRUPO DE TELEFONE JÁ EXISTE - 6666|7275551212|TEST_IN_FILTER
+SUCESSO: add_fpg_phone NÚMERO DE GRUPO DE TELEFONE DO FILTRO FOI ADICIONADO - 6666|7275551212|TEST_IN_FILTER
+
+
+
+
+-------------------------------------------------- ------------------------------
+delete_fpg_phone - remove número de telefone de um grupo de telefone de filtro no sistema
+
+NOTA: o usuário da API para esta função deve ter o user_level definido como 8 ou superior e "modificar listas" habilitado
+
+CAMPOS OBRIGATÓRIOS-
+phone_number - 6-20 caracteres
+grupo - 2 a 30 caracteres, deve ser um ID de grupo de telefone de filtro válido no sistema
+
+Exemplo de sequências de URL para chamadas de API:
+http://server/vicidial/non_agent_api.php?source=test&function=delete_fpg_phone&user=6666&pass=1234&phone_number=7275551212&group=TEST_IN_FILTER
+
+Respostas de exemplo:
+ERRO: delete_fpg_phone O USUÁRIO NÃO TEM PERMISSÃO PARA EXCLUIR NÚMEROS DE GRUPO DE TELEFONE DO FILTRO - 6666|0
+ERRO: delete_fpg_phone VOCÊ DEVE USAR TODOS OS CAMPOS OBRIGATÓRIOS - 6666|||1000
+ERRO: delete_fpg_phone FILTRO GRUPO DE TELEFONE NÃO EXISTE - 6666|TEST_IN_FILTER2
+ERRO: delete_fpg_phone NÚMERO DO GRUPO DE TELEFONE DO FILTRO NÃO EXISTE - 6666|7275551212|TEST_IN_FILTER
+SUCESSO: delete_fpg_phone O NÚMERO DO GRUPO DE TELEFONE DO FILTRO FOI EXCLUÍDO - 6666|7275551212|TEST_IN_FILTER
+
+
+
+
+
+-------------------------------------------------- ------------------------------
+add_phone - adiciona um telefone ao sistema
+
+NOTA: o usuário da API para esta função deve ter o user_level definido como 8 ou superior e o "acesso de administrador ast" habilitado
+
+CAMPOS OBRIGATÓRIOS-
+extensão - 2-100 caracteres
+dialplan_number - 1-20 dígitos
+voicemail_id - 1-10 dígitos
+phone_login - 1-20 caracteres
+phone_pass - 1-20 caracteres
+server_ip - 7 a 15 caracteres, deve ser um server_ip válido
+protocolo - Deve ser um destes: 'IAX2','SIP','Zap','EXTERNAL'
+registration_password - 1-20 caracteres
+phone_full_name - 1-50 caracteres
+local_gmt - configuração de fuso horário, sem ajuste para DST, padrão: '-5.00'
+outbound_cid - 1-20 dígitos
+
+CAMPOS OPCIONAIS-
+phone_context - um contexto de telefone, o padrão é 'default'
+e-mail - 1-100 caracteres
+admin_user_group - um grupo de usuários válido ou '---ALL---'
+is_webphone - Y, N ou Y_API_LAUNCH: se este telefone deve ser tratado como um webphone, o padrão é N.
+webphone_auto_answer - S ou N: se este telefone deve atender assim que a chamada para o agente for feita, o padrão é N.
+use_external_server_ip - S ou N: se este telefone deve usar o IP externo do servidor para registro, o padrão é N.
+template_id - 1-15 caracteres, se definido deve ser um modelo válido no sistema
+on_hook_agent - S ou N: este telefone deve ser tratado como desligando quando um agente efetuar login com ele; o padrão é N.
+
+Exemplo de sequências de URL para chamadas de API:
+http://server/vicidial/non_agent_api.php?source=test&function=add_phone&user=6666&pass=1234&extension=55000&dialplan_number=55000&voicemail_id=55000&phone_login=55000&phone_pass=test&server_ip=192.168.198.5&protocol=SIP®istration_password=test&phone_full_name=Extensão+55000&local_gmt=-5.00&outbound_cid=7275551212
+http://server/vicidial/non_agent_api.php?source=test&function=add_phone&user=6666&pass=1234&extension=55000&dialplan_number=55000&voicemail_id=55000&phone_login=55000&phone_pass=test&server_ip=192.168.198.5&protocol=SIP®istration_password=test&phone_full_name=Extensão+55000&local_gmt=-5.00&outbound_cid=7275551212&phone_context=default&email=test@test.com
+
+Respostas de exemplo:
+ERRO: add_phone O USUÁRIO NÃO TEM PERMISSÃO PARA ADICIONAR TELEFONES - 6666|0
+ERRO: add_phone VOCÊ DEVE USAR TODOS OS CAMPOS OBRIGATÓRIOS - 6666|1000|||||||||||
+ERRO: O SERVIDOR add_phone NÃO EXISTE - 6666|10.0.9.9
+ERRO: add_phone TELEFONE JÁ EXISTE NESTE SERVIDOR - 6666|10.0.9.8|cc101
+ERRO: add_phone LOGIN DE TELEFONE JÁ EXISTE - 6666|cc100
+ERRO: add_phone VOCÊ DEVE USAR UM FUSO HORÁRIO VÁLIDO - 6666|-5
+ERRO: add_phone ID DO MODELO NÃO EXISTE, ESTE É UM CAMPO OPCIONAL - 6666|cc100|batch
+SUCESSO: add_phone TELEFONE FOI ADICIONADO - 6666|cc100|10.0.9.8|SIP|100
+
+
+
+
+
+-------------------------------------------------- ------------------------------
+update_phone - atualiza ou exclui uma entrada de telefone já existente no sistema
+
+NOTA: o usuário da API para esta função deve ter o user_level definido como 8 ou superior e o "acesso de administrador ast" habilitado
+
+CAMPOS OBRIGATÓRIOS-
+extensão - 2-100 caracteres
+server_ip - 7 a 15 caracteres, deve ser um server_ip válido
+
+CAMPOS DE CONFIGURAÇÕES-
+delete_phone - S ou N, definir como S excluirá o telefone do sistema, o padrão é N.
+
+CAMPOS EDITÁVEIS-
+dialplan_number - 1-20 dígitos
+voicemail_id - 1-10 dígitos
+phone_login - 1-20 caracteres
+phone_pass - 1-20 caracteres
+protocolo - Deve ser um destes: 'IAX2','SIP','Zap','EXTERNAL'
+registration_password - 1-20 caracteres
+phone_full_name - 1-50 caracteres
+local_gmt - configuração de fuso horário, sem ajuste para DST, padrão: '-5.00'
+outbound_cid - 6-18 dígitos
+outbound_alt_cid - 6-18 dígitos, para limpar este campo envie '--BLANK--'
+phone_context - um contexto de telefone, o padrão é 'default'
+e-mail - 5 a 100 caracteres, endereço de e-mail para correio de voz, para limpar este campo envie '--BLANK--'
+admin_user_group - um grupo de usuários válido ou '---ALL---'
+phone_ring_timeout - 1-3 dígitos, padrão '60'
+delete_vm_after_email - S ou N, padrão 'N'
+is_webphone - Y, N ou Y_API_LAUNCH: se este telefone deve ser tratado como um webphone, o padrão é N.
+webphone_auto_answer - S ou N: se este telefone deve atender assim que a chamada para o agente for feita, o padrão é N.
+use_external_server_ip - S ou N: se este telefone deve usar o IP externo do servidor para registro, o padrão é N.
+template_id - 1-15 caracteres, se definido deve ser um modelo válido no sistema
+on_hook_agent - S ou N: este telefone deve ser tratado como desligando quando um agente efetuar login com ele; o padrão é N.
+
+Exemplo de sequências de URL para chamadas de API:
+http://server/vicidial/non_agent_api.php?source=test&function=update_phone&user=6666&pass=1234&extension=55000&dialplan_number=55000&voicemail_id=55000&phone_login=55000&phone_pass=test&server_ip=192.168.198.5&protocol=SIP®istration_password=test&phone_full_name=Extensão+55000&local_gmt=-5.00&outbound_cid=7275551212
+http://server/vicidial/non_agent_api.php?source=test&function=update_phone&user=6666&pass=1234&extension=55000&dialplan_number=55000&voicemail_id=55000&phone_login=55000&phone_pass=test&server_ip=192.168.198.5&protocol=SIP®istration_password=test&phone_full_name=Extension+55000&local_gmt=-5.00&outbound_cid=7275551212&phone_context=default&email=test@test.com
+http://server/vicidial/non_agent_api.php?source=test&function=update_phone&user=6666&pass=1234&extension=55000&server_ip=192.168.198.5&delete_phone=Y
+
+Respostas de exemplo:
+ERRO: update_phone O USUÁRIO NÃO TEM PERMISSÃO PARA ATUALIZAR TELEFONES - 6666|0
+ERRO: update_phone VOCÊ DEVE USAR TODOS OS CAMPOS OBRIGATÓRIOS - 6666||
+ERRO: O SERVIDOR update_phone NÃO EXISTE - 6666|10.0.9.9
+ERRO: update_phone TELEFONE NÃO EXISTE NESTE SERVIDOR - 6666|10.0.9.8|cc101
+ERRO: update_phone LOGIN JÁ EXISTE - 6666|x101
+ERRO: update_phone VOCÊ DEVE USAR UM FUSO HORÁRIO VÁLIDO - 6666|-99
+ERRO: update_phone VOCÊ DEVE USAR UM NÚMERO DE DISCAGEM VÁLIDO - 6666|0
+ERRO: update_phone VOCÊ DEVE USAR UM NÚMERO DE CORREIO DE VOZ VÁLIDO - 6666|0
+ERRO: update_phone VOCÊ DEVE USAR UMA SENHA DE TELEFONE VÁLIDA - 6666|0
+ERRO: update_phone VOCÊ DEVE USAR UMA SENHA DE REGISTRO VÁLIDA - 6666|0
+ERRO: update_phone VOCÊ DEVE USAR UM PROTOCOLO VÁLIDO - 6666|0
+ERRO: update_phone VOCÊ DEVE USAR UM NOME DE TELEFONE VÁLIDO - 6666|0
+ERRO: update_phone VOCÊ DEVE USAR UM CONTEXTO DE TELEFONE VÁLIDO - 6666|0
+ERRO: update_phone VOCÊ DEVE USAR UM E-MAIL VÁLIDO - 6666|x.com
+ERRO: update_phone NENHUMA ATUALIZAÇÃO DEFINIDA - 6666|0
+ERRO: update_phone ATIVO DEVE SER S OU N, ESTE É UM CAMPO OPCIONAL - 6666|0
+ERRO: update_phone CID DE SAÍDA DEVE TER DE 6 A 18 DÍGITOS, ESTE É UM CAMPO OPCIONAL - 6666|0
+ERRO: update_phone OUTBOUND ALT CID DEVE TER DE 6 A 18 DÍGITOS, ESTE É UM CAMPO OPCIONAL - 6666|0
+ERRO: update_phone O GRUPO DE USUÁRIOS DEVE TER DE 2 A 20 CARACTERES, ESTE É UM CAMPO OPCIONAL - 6666|0
+ERRO: update_phone O TEMPO LIMITE DO TOQUE DO TELEFONE DEVE SER DE 2 A 180 SEGUNDOS, ESTE É UM CAMPO OPCIONAL - 6666|0
+ERRO: update_phone EXCLUIR CORREIO DE VOZ APÓS O E-MAIL DEVE SER S OU N, ESTE É UM CAMPO OPCIONAL - 6666|0
+ERRO: update_phone TEMPLATE ID NÃO EXISTE, ESTE É UM CAMPO OPCIONAL - 6666|cc100|batch
+SUCESSO: update_phone TELEFONE FOI ATUALIZADO - 6666|cc100|10.0.9.8|SIP|100
+SUCESSO: update_phone TELEFONE FOI EXCLUÍDO - 6666|cc100|10.0.9.8|
+AVISO: update_phone O USUÁRIO NÃO TEM PERMISSÃO PARA EXCLUIR TELEFONES - 6666|7878
+
+
+
+
+
+-------------------------------------------------- ------------------------------
+add_phone_alias - adiciona uma entrada de alias de telefone ao sistema
+
+NOTA: o usuário da API para esta função deve ter o user_level definido como 8 ou superior e o "acesso de administrador ast" habilitado
+
+CAMPOS OBRIGATÓRIOS-
+alias_id - 2-20 caracteres
+phone_logins - 2-255 caracteres (logins de telefone separados por vírgulas)
+alias_name - 1-50 caracteres
+
+Exemplo de sequências de URL para chamadas de API:
+http://server/vicidial/non_agent_api.php?source=test&function=add_phone_alias&user=6666&pass=1234&alias_id=xyz100&alias_name=XYZ+testing&phone_logins=100a,100b
+
+Respostas de exemplo:
+ERRO: add_phone_alias O USUÁRIO NÃO TEM PERMISSÃO PARA ADICIONAR ALIASES DE TELEFONE - 6666|0
+ERRO: add_phone_alias VOCÊ DEVE USAR TODOS OS CAMPOS OBRIGATÓRIOS - 6666||||
+ERRO: add_phone_alias ALIAS DE TELEFONE JÁ EXISTE - 6666|x101
+ERRO: add_phone_alias TELEFONE NÃO EXISTE - 6666|cc100
+SUCESSO: add_phone_alias ALIAS DE TELEFONE FOI ADICIONADO - 6666|x100|testing_x100|cc100,bb100
+
+
+
+
+
+-------------------------------------------------- ------------------------------
+update_phone_alias - atualiza ou exclui uma entrada de alias de telefone já existente no sistema
+
+NOTA: o usuário da API para esta função deve ter o user_level definido como 8 ou superior e o "acesso de administrador ast" habilitado
+
+CAMPOS OBRIGATÓRIOS-
+alias_id - 2-20 caracteres
+phone_logins - 2-255 caracteres (logins de telefone separados por vírgulas)
+alias_name - 1-50 caracteres
+
+CAMPOS DE CONFIGURAÇÕES-
+delete_alias - S ou N, definir como S excluirá o alias do telefone do sistema, o padrão é N.
+
+Exemplo de sequências de URL para chamadas de API:
+http://server/vicidial/non_agent_api.php?source=test&function=update_phone_alias&user=6666&pass=1234&alias_id=xyz100&alias_name=XYZ+testing+X&phone_logins=100a,100b
+http://server/vicidial/non_agent_api.php?source=test&function=update_phone_alias&user=6666&pass=1234&alias_id=xyz100&delete_alias=Y
+
+Respostas de exemplo:
+ERRO: update_phone_alias O USUÁRIO NÃO TEM PERMISSÃO PARA ATUALIZAR ALIASES DE TELEFONE - 6666|0
+ERRO: update_phone_alias VOCÊ DEVE USAR TODOS OS CAMPOS OBRIGATÓRIOS - 6666||||
+ERRO: update_phone_alias ALIAS DO TELEFONE NÃO EXISTE - 6666|x101
+ERRO: update_phone_alias VOCÊ DEVE USAR UM NOME DE ALIAS VÁLIDO - 6666|x
+ERRO: update_phone_alias TELEFONE NÃO EXISTE - 6666|cc100
+SUCESSO: update_phone_alias O ALIAS DO TELEFONE FOI ATUALIZADO - 6666|x100|
+SUCESSO: update_phone_alias O ALIAS DO TELEFONE FOI EXCLUÍDO - 6666|x100|
+
+
+
+
+
+-------------------------------------------------- ------------------------------
+server_refresh - força uma atualização do arquivo conf em todos os servidores telco no cluster
+
+NOTA: o usuário da API para esta função deve ter o user_level definido como 8 ou superior e o "acesso de administrador ast" habilitado
+
+CAMPOS OBRIGATÓRIOS-
+estágio - "REFRESH"
+
+Exemplo de sequência de URL para chamadas de API:
+http://server/vicidial/non_agent_api.php?source=test&function=server_refresh&user=6666&pass=1234&stage=REFRESH
+
+Respostas de exemplo:
+ERRO: server_refresh O USUÁRIO NÃO TEM PERMISSÃO PARA ATUALIZAR SERVIDORES - 6666|0
+ERRO: server_refresh VOCÊ DEVE USAR TODOS OS CAMPOS OBRIGATÓRIOS - 6666|
+SUCESSO: server_refresh ATUALIZAÇÃO DO SERVIDOR FOI DISPARADA - 6666|1
+
+
+
+
+
+-------------------------------------------------- ------------------------------
+add_list - adiciona uma lista ao sistema
+
+NOTA: o usuário da API para esta função deve ter o user_level definido como 8 ou superior e "modificar listas" habilitado
+
+CAMPOS OBRIGATÓRIOS-
+list_id - 2-14 dígitos
+nome_da_lista - 2-30 caracteres
+campaign_id - 2 a 8 caracteres, deve ser um campaign_id válido
+
+CAMPOS OPCIONAIS-
+ativo - Deve ser um destes: 'S', 'N', o padrão será 'N'
+list_description - até 255 caracteres, para esvaziar este campo, defina como --BLANK--
+outbound_cid - 6-20 dígitos
+script - 1-10 caracteres, deve ser um script válido
+am_message - 2-100 caracteres
+drop_inbound_group - 1-10 caracteres, deve ser um grupo válido
+web_form_address - 6-100 caracteres
+web_form_address_two - 6-100 caracteres
+web_form_address_three - 6-100 caracteres
+reset_time - 4-100 caracteres, devem estar em grupos válidos de 4 dígitos de 24 horas (ou seja, 0900-1700-2359)
+tz_method - um dos seguintes: COUNTRY_AND_AREA_CODE,POSTAL_CODE,NANPA_PREFIX,OWNER_TIME_ZONE_CODE o padrão é COUNTRY_AND_AREA_CODE
+local_call_time - deve ser um ID de tempo de chamada válido no sistema ou 'campanha' que é o padrão
+expiration_date - 10 caracteres, deve estar em formato de data válido AAAA-MM-DD (ou seja, 2012-11-25)
+xferconf_one - Transferência - Substituição do número de configuração 1: 1-50 caracteres
+xferconf_two - Transferência - Substituição do número de configuração 2: 1-50 caracteres
+xferconf_three - Transferência - Substituição do número de configuração 3: 1-50 caracteres
+xferconf_four - Transferência - Substituição do número de configuração 4: 1-50 caracteres
+xferconf_five - Transferência - Substituição do número de configuração 5: 1-50 caracteres
+custom_fields_copy - Uma ID de lista válida com campos personalizados a serem copiados para esta nova lista, de 2 a 14 dígitos
+custom_copy_method - método (APPEND,UPDATE,REPLACE) para como executar o 'custom_fields_copy', o padrão é APPEND
+				APPEND - o único método 100% seguro, não resultará em perda de dados existentes, apenas adiciona campos não presentes na nova lista
+				ATUALIZAÇÃO - atualizará apenas as definições de campos personalizados existentes para corresponder à lista de origem
+				SUBSTITUIR - excluirá todos os dados de leads de campos personalizados existentes na nova lista e começará do zero
+NOTAS:
+ - para os endereços de formulários da web, você pode codificá-los por URL para incluir caracteres especiais de URL padrão
+ - para usar a opção 'custom_fields_copy', o usuário da API deve ter a opção de usuário "Custom Fields Modify" habilitada
+
+
+Exemplo de sequências de URL para chamadas de API:
+http://server/vicidial/non_agent_api.php?source=test&function=add_list&user=6666&pass=1234&list_id=1101&list_name=Test+API+list&campaign_id=TESTCAMP
+http://server/vicidial/non_agent_api.php?source=test&function=add_list&user=6666&pass=1234&list_id=1101&list_name=Test+API+list&campaign_id=TESTCAMP&active=N&outbound_cid=7275551212&script=DEMOSCRIPT&am_message=8304&drop_inbound_group=SALESLINE&web_form_address=http://www.vicidial.org/?testing=hghg
+http://server/vicidial/non_agent_api.php?source=test&function=add_list&user=6666&pass=1234&list_id=303&list_name=Test+API+list+3&campaign_id=TESTCAMP&custom_fields_copy=222
+
+Respostas de exemplo:
+ERRO: add_list O USUÁRIO NÃO TEM PERMISSÃO PARA ADICIONAR LISTAS - 6666|0
+ERRO: add_list VOCÊ DEVE USAR TODOS OS CAMPOS OBRIGATÓRIOS - 6666|1000||
+ERRO: add_list CAMPANHA NÃO EXISTE - 6666|TESTCIMP
+ERRO: add_list LISTA JÁ EXISTE - 6666|1101
+ERRO: add_list SCRIPT NÃO EXISTE, ESTE É UM CAMPO OPCIONAL - 6666|TESTSCRIPT
+ERRO: add_list IN-GROUP NÃO EXISTE, ESTE É UM CAMPO OPCIONAL - 6666|TEST_IN8
+ERRO: O TEMPO DE REINICIALIZAÇÃO do add_list NÃO É VÁLIDO, ESTE É UM CAMPO OPCIONAL - 6666|012
+ERRO: add_list DATA DE EXPIRAÇÃO NÃO É VÁLIDA, ESTE É UM CAMPO OPCIONAL - 6666|012
+ERRO: add_list HORÁRIO DE CHAMADA LOCAL NÃO EXISTE, ESTE É UM CAMPO OPCIONAL - 6666|012
+ERRO: O MÉTODO DE FUSO HORÁRIO add_list NÃO É VÁLIDO, ESTE É UM CAMPO OPCIONAL - 6666|012
+ERRO: add_list TRANSFER CONF OVERRIDE ONE NÃO É VÁLIDO, ESTE É UM CAMPO OPCIONAL - 6666|123456789012345678901234567890123456789012345678901
+ERRO: add_list TRANSFER CONF OVERRIDE TWO NÃO É VÁLIDO, ESTE É UM CAMPO OPCIONAL - 6666|123456789012345678901234567890123456789012345678901
+ERRO: add_list TRANSFER CONF OVERRIDE TRÊS NÃO É VÁLIDO, ESTE É UM CAMPO OPCIONAL - 6666|123456789012345678901234567890123456789012345678901
+ERRO: add_list SUBSTITUIÇÃO DE CONFIGURAÇÃO DE TRANSFERÊNCIA QUATRO NÃO É VÁLIDO, ESTE É UM CAMPO OPCIONAL - 6666|123456789012345678901234567890123456789012345678901
+ERRO: add_list TRANSFER CONF OVERRIDE FIVE NÃO É VÁLIDO, ESTE É UM CAMPO OPCIONAL - 6666|123456789012345678901234567890123456789012345678901
+ERRO: add_list LISTA DE CAMPOS PERSONALIZADOS ID DA LISTA PARA COPIAR NÃO EXISTE, ESTE É UM CAMPO OPCIONAL - 6666|1101|1102|0
+ERRO: add_list LISTA DE CAMPOS PERSONALIZADOS ID DA LISTA PARA COPIAR NÃO TEM CAMPOS PERSONALIZADOS, ESTE É UM CAMPO OPCIONAL - 6666|1101|1102|0
+ERRO: add_list O USUÁRIO NÃO TEM PERMISSÃO PARA MODIFICAR CAMPOS PERSONALIZADOS, ESTE É UM CAMPO OPCIONAL - 6666|1101|1102|0
+SUCESSO: add_list LISTA FOI ADICIONADA - 6666|1101|TESTCAMP
+
+
+
+
+
+-------------------------------------------------- ------------------------------
+update_list - atualiza informações da lista na tabela vicidial_lists
+
+NOTA: o usuário da API para esta função deve ter o user_level definido como 8 ou superior e "modificar listas" habilitado
+
+CAMPOS OBRIGATÓRIOS-
+list_id - deve ser composto apenas por números, de 2 a 14 dígitos
+fonte - descrição do que originou a chamada da API (máximo de 20 caracteres)
+
+CAMPOS DE CONFIGURAÇÕES-
+insert_if_not_found - S ou N, tentará inserir como uma nova lista se nenhuma correspondência for encontrada, o padrão é N.
+			Se a lista não for encontrada, a função mudará para add_list e será processada dessa forma
+reset_list - S ou N, definir como S redefinirá o sinalizador Chamado desde a última reinicialização para todos os leads nesta lista, o padrão é N.
+delete_list - S ou N, definir como S excluirá a lista da tabela vicidial_lists, o padrão é N.
+delete_leads - S ou N, definir como S excluirá todos os leads com este list_id da tabela vicidial_list, o padrão é N.
+archived_lead - S ou N, definir como S afetará apenas os leads vicidial_list_archive, o padrão é N.
+
+CAMPOS EDITÁVEIS-
+list_name - 6-30 caracteres
+list_description - até 255 caracteres, para esvaziar este campo, defina como --BLANK--
+campaign_id - 2 a 8 caracteres, deve ser um campaign_id válido
+ativo - Deve ser um destes: 'S', 'N', o padrão será 'N'
+outbound_cid - 6-20 dígitos
+script - 1-10 caracteres, deve ser um script válido
+am_message - 2-100 caracteres
+drop_inbound_group - 1-10 caracteres, deve ser um grupo válido
+web_form_address - 6-100 caracteres
+web_form_address_two - 6-100 caracteres
+web_form_address_three - 6-100 caracteres
+reset_time - 4-100 caracteres, devem estar em grupos válidos de 4 dígitos de 24 horas (ou seja, 0900-1700-2359)
+tz_method - um dos seguintes: COUNTRY_AND_AREA_CODE,POSTAL_CODE,NANPA_PREFIX,OWNER_TIME_ZONE_CODE o padrão é COUNTRY_AND_AREA_CODE
+local_call_time - deve ser um ID de tempo de chamada válido no sistema ou 'campanha' que é o padrão
+expiration_date - 10 caracteres, deve estar em formato de data válido AAAA-MM-DD (ou seja, 2012-11-25)
+xferconf_one - Transferência - Substituição do número de configuração 1: 1-50 caracteres
+xferconf_two - Transferência - Substituição do número de configuração 2: 1-50 caracteres
+xferconf_three - Transferência - Substituição do número de configuração 3: 1-50 caracteres
+xferconf_four - Transferência - Substituição do número de configuração 4: 1-50 caracteres
+xferconf_five - Transferência - Substituição do número de configuração 5: 1-50 caracteres
+custom_fields_copy - Uma ID de lista válida com campos personalizados a serem copiados para a lista que está sendo atualizada, de 2 a 14 dígitos
+custom_copy_method - método (APPEND,UPDATE,REPLACE) para como executar o 'custom_fields_copy', o padrão é APPEND
+				APPEND - o único método 100% seguro, não resultará em perda de dados existentes, apenas adiciona campos não presentes na lista de destino
+				ATUALIZAÇÃO - atualizará apenas as definições de campos personalizados existentes para corresponder à lista de origem, não adicionará novos campos
+				SUBSTITUIR - excluirá todos os dados de lead de campo personalizado existentes na lista de destino e começará do zero com novos campos
+custom_fields_add - Deve ser um destes: 'Y','N', será o padrão para 'N'. Os campos abaixo marcados com um asterisco(*) são obrigatórios para que isso funcione:
+	field_label* - O rótulo a ser usado no banco de dados para este campo personalizado (somente letras, números e sublinhados permitidos)
+	field_name* - O nome visível do campo no formulário
+	field_size* - O tamanho do campo do formulário
+	field_type* - O tipo de campo: TEXT, SELECT, AREA, etc... (veja a página da web de administração de campos de lista personalizados HELP para mais informações)
+	field_rank* - A ordem de cima para baixo de onde este campo aparecerá no formulário
+	field_order - A ordem horizontal do campo, se houver mais de um da mesma classificação
+	field_rerank - Se houver um campo existente com a mesma classificação, mova os existentes para baixo na lista, 'SIM', 'NÃO' o padrão é 'NÃO'
+	field_max - O tamanho máximo de dados permitido no campo
+	field_default - O valor padrão do campo
+	field_options - As opções de campo para este campo. Se não estiver POSTANDO variáveis, para iniciar uma nova linha, use '%0A', para um pipe '|' use '%7C'
+	field_duplicate - Se for uma duplicata de outro campo existente para esta lista ID: 'S', 'N' o padrão é 'N'
+	field_description - Descrição do campo
+	field_help - O texto de ajuda para este campo conforme ele aparece para o agente no formulário personalizado
+	field_required - Se este campo for considerado obrigatório: 'S', 'N' o padrão é 'N'
+	multi_position - A posição do elemento de campo: 'HORIZONTAL', 'VERTICAL' o padrão é 'HORIZONTAL'
+	name_position - A posição do nome do campo: 'TOP', 'LEFT' o padrão é 'LEFT'
+	field_encrypt - Se este for um campo criptografado (um recurso exclusivo do VICIhost, se habilitado): 'S', 'N' o padrão é 'N'
+	field_show_hide - Se o campo deve ser ocultado (um recurso exclusivo do VICIhost, se habilitado): 'DISABLED','X_OUT_ALL','LAST_1','LAST_2','LAST_3','LAST_4','FIRST_1_LAST_4'
+custom_fields_update - Deve ser um destes: 'Y','N', será o padrão para 'N'. Os campos mostrados acima são todos opcionais, exceto 'field_label' que é necessário para que isso funcione
+	* Somente para 'custom_fields_update', você pode definir os seguintes campos como '--BLANK--' para que eles sejam alterados para um valor '' vazio:
+		descrição_do_campo, $ajuda_do_campo, $opções_do_campo, $padrão_do_campo
+custom_fields_delete - Deve ser um destes: 'Y','N', será o padrão para 'N'. O campo 'field_label' é necessário para que isso funcione
+
+NOTAS:
+ - para definir um campo como vazio(''), defina-o como --BLANK--, ou seja, "&drop_inbound_group=--BLANK--"
+ - não use caracteres especiais como apóstrofos, aspas ou e-feras
+ - para os endereços de formulários da web, você pode codificá-los por URL para incluir caracteres especiais de URL padrão
+
+
+Exemplo de sequências de URL para chamadas de API:
+http://server/vicidial/non_agent_api.php?source=test&user=6666&pass=1234&function=update_list&list_id=1101&list_name=Lista+de+API+de+teste+atualizada
+http://server/vicidial/non_agent_api.php?source=test&user=6666&pass=1234&function=update_list&list_id=1101&active=N
+http://server/vicidial/non_agent_api.php?source=test&user=6666&pass=1234&function=update_list&list_id=1102&active=N&insert_if_not_found=Y&list_name=Lista+de+API+de+teste+atualizada&campaign_id=TESTCAMP&outbound_cid=7275551212&script=DEMOSCRIPT&am_message=8304&drop_inbound_group=SALESLINE&web_form_address=http://www.vicidial.org/?testing=hghg
+http://server/vicidial/non_agent_api.php?source=test&user=6666&pass=1234&function=update_list&list_id=1102&reset_list=Y
+http://server/vicidial/non_agent_api.php?source=test&user=6666&pass=1234&function=update_list&list_id=1102&delete_list=Y&delete_leads=Y
+http://server/vicidial/non_agent_api.php?source=test&user=6666&pass=1234&function=update_list&list_id=1102&campaign_id=ASTRICON
+http://server/vicidial/non_agent_api.php?source=test&user=6666&pass=1234&function=update_list&list_id=99883&custom_copy_method=APPEND&custom_fields_copy=9988
+http://server/vicidial/non_agent_api.php?source=test&user=6666&pass=1234&function=update_list&list_id=9988&custom_fields_add=Y&field_label=new_api_field4&field_name=new+API+field4&field_size=20&field_type=TEXT&field_rank=16
+http://server/vicidial/non_agent_api.php?source=test&user=6666&pass=1234&function=update_list&list_id=9988&custom_fields_update=Y&field_label=Utility&field_options=1,1_1_hello%0A2,2_2_hello%0A3,3_3_hello
+http://server/vicidial/non_agent_api.php?source=test&user=6666&pass=1234&function=update_list&list_id=9988&custom_fields_update=Y&field_label=bill_period3&field_options=source=%3Ebill_start_month3%0Avalue=%3ESeptember%0Aoption=%3E%7Cselect%20bill-period-1%0Aoption=%3E1_month%7C1%20Month%0Aoption=%3E2_months%7C2%20Months%0Aoption=%3E3_months%7C3%20Months%0Avalue=%3E%0Aoption=%3E%7Cno%20match
+http://server/vicidial/non_agent_api.php?source=test&user=6666&pass=1234&function=update_list&list_id=5040379&custom_fields_delete=Y&field_label=new_api_field6
+
+Respostas de exemplo:
+ERRO: update_list O USUÁRIO NÃO TEM PERMISSÃO PARA ATUALIZAR LISTAS - 6666
+ERRO: update_list VOCÊ DEVE USAR TODOS OS CAMPOS OBRIGATÓRIOS - 6666|1
+ERRO: update_list NÃO É UMA LISTA DE ID PERMITIDA - 98762
+AVISO: LISTA update_list NÃO EXISTE, ENVIANDO PARA FUNÇÃO add_list - 6666|1000
+ERRO: update_list LISTA NÃO EXISTE - 6666|1000
+ERRO: update_list A CAMPANHA NÃO EXISTE, ESTE É UM CAMPO OPCIONAL - 6666|TESTCIMP
+ERRO: O SCRIPT update_list NÃO EXISTE, ESTE É UM CAMPO OPCIONAL - 6666|TESTSCRIPT
+ERRO: update_list IN-GROUP NÃO EXISTE, ESTE É UM CAMPO OPCIONAL - 6666|TEST_IN8
+ERRO: update_list O NOME DA LISTA DEVE TER DE 6 A 30 CARACTERES, ESTE É UM CAMPO OPCIONAL - 6666|test
+ERRO: update_list ATIVO DEVE SER S OU N, ESTE É UM CAMPO OPCIONAL - 6666|U
+ERRO: update_list CID DE SAÍDA DEVE TER DE 6 A 18 DÍGITOS, ESTE É UM CAMPO OPCIONAL - 6666|12345
+ERRO: update_list A MENSAGEM DA SECRETÁRIA ELETRÔNICA DEVE TER MENOS DE 101 DÍGITOS, ESTE É UM CAMPO OPCIONAL - 6666|123...
+ERRO: O TEMPO DE REINICIALIZAÇÃO DO update_list NÃO É VÁLIDO, ESTE É UM CAMPO OPCIONAL - 6666|012
+ERRO: update_list DATA DE EXPIRAÇÃO NÃO É VÁLIDA, ESTE É UM CAMPO OPCIONAL - 6666|012
+ERRO: O MÉTODO DE FUSO HORÁRIO update_list NÃO É VÁLIDO, ESTE É UM CAMPO OPCIONAL - 6666|012
+ERRO: update_list O HORÁRIO DE CHAMADA LOCAL NÃO EXISTE, ESTE É UM CAMPO OPCIONAL - 6666|012
+ERRO: update_list TRANSFER CONF OVERRIDE ONE NÃO É VÁLIDO, ESTE É UM CAMPO OPCIONAL - 6666|123456789012345678901234567890123456789012345678901
+ERRO: update_list TRANSFER CONF OVERRIDE TWO NÃO É VÁLIDO, ESTE É UM CAMPO OPCIONAL - 6666|123456789012345678901234567890123456789012345678901
+ERRO: update_list TRANSFER CONF OVERRIDE TRÊS NÃO É VÁLIDO, ESTE É UM CAMPO OPCIONAL - 6666|123456789012345678901234567890123456789012345678901
+ERRO: update_list TRANSFER CONF OVERRIDE FOUR NÃO É VÁLIDO, ESTE É UM CAMPO OPCIONAL - 6666|123456789012345678901234567890123456789012345678901
+ERRO: update_list TRANSFER CONF OVERRIDE FIVE NÃO É VÁLIDO, ESTE É UM CAMPO OPCIONAL - 6666|123456789012345678901234567890123456789012345678901
+AVISO: update_list SEM ATUALIZAÇÕES DEFINIDAS - 6666|
+SUCESSO: update_list LISTA FOI ATUALIZADA - 6666|1101
+AVISO: update_list OS LEADS NA LISTA FORAM REINICIADOS - 6666|1101|324
+AVISO: update_list LIST RESET FALHOU, limite de redefinição diária atingido: 2 / 2 - 6666|1101
+AVISO: O USUÁRIO update_list NÃO TEM PERMISSÃO PARA EXCLUIR LISTAS - 6666|0
+AVISO: update_list LISTA FOI EXCLUÍDA - 6666|1101|1
+AVISO: O USUÁRIO update_list NÃO TEM PERMISSÃO PARA EXCLUIR LEADS - 6666|0
+AVISO: update_list LEADS NA LISTA FORAM EXCLUÍDOS - 6666|1101|324
+AVISO: update_list LISTA DE CAMPOS PERSONALIZADOS ID DA LISTA PARA COPIAR NÃO EXISTE, ESTE É UM CAMPO OPCIONAL - 6666|1101|1102|0
+AVISO: update_list LISTA DE CAMPOS PERSONALIZADOS ID DA LISTA PARA COPIAR NÃO TEM CAMPOS PERSONALIZADOS, ESTE É UM CAMPO OPCIONAL - 6666|1101|1102|0
+AVISO: update_list O USUÁRIO NÃO TEM PERMISSÃO PARA MODIFICAR CAMPOS PERSONALIZADOS, ESTE É UM CAMPO OPCIONAL - 6666|1101|1102|0
+AVISO: update_list COPY CUSTOM FIELDS COMANDO ENVIADO - 6666|1101|APPEND|ERRO: Campos não copiados|
+AVISO: update_list COPY CUSTOM FIELDS COMANDO ENVIADO - 6666|1101|APPEND|SUCCESS: Campos copiados|
+AVISO: update_list LISTA DE CAMPOS PERSONALIZADOS ID PARA ADICIONAR NÃO TEM CAMPOS PERSONALIZADOS, ESTE É UM CAMPO OPCIONAL - 6666|1101
+AVISO: update_list VARIÁVEIS DE CAMPOS PERSONALIZADOS OBRIGATÓRIOS ESTÃO FALTANDO, CAMPO NÃO ADICIONADO, ESTE É UM CAMPO OPCIONAL - 6666|1101||||||
+AVISO: update_list LISTA DE CAMPOS PERSONALIZADOS ID PARA ATUALIZAR NÃO TEM CAMPOS PERSONALIZADOS, ESTE É UM CAMPO OPCIONAL - 6666|1101||||||
+AVISO: update_list VARIÁVEIS DE CAMPOS PERSONALIZADOS OBRIGATÓRIOS ESTÃO FALTANDO, CAMPO NÃO ATUALIZADO, ESTE É UM CAMPO OPCIONAL - 6666|1101|||
+AVISO: O CAMPO update_list NÃO EXISTE, O CAMPO NÃO ESTÁ ATUALIZADO, ESTE É UM CAMPO OPCIONAL - 6666|1101|abc|||||
+AVISO: update_list LISTA DE CAMPOS PERSONALIZADOS ID PARA EXCLUIR NÃO TEM CAMPOS PERSONALIZADOS, ESTE É UM CAMPO OPCIONAL - 6666|1101|
+AVISO: update_list VARIÁVEIS DE CAMPOS PERSONALIZADOS OBRIGATÓRIOS ESTÃO FALTANDO, CAMPO NÃO FOI EXCLUÍDO, ESTE É UM CAMPO OPCIONAL - 6666|1101|||
+AVISO: O CAMPO update_list NÃO EXISTE, O CAMPO NÃO FOI EXCLUÍDO, ESTE É UM CAMPO OPCIONAL - 6666|1101|abc|
+AVISO: update_list ADICIONAR COMANDO DE CAMPO PERSONALIZADO ENVIADO - 6666|1101|new_field|TEXTO|ERRO: Campo não adicionado|
+AVISO: update_list ADICIONAR COMANDO DE CAMPO PERSONALIZADO ENVIADO - 6666|1101|new_field|TEXTO|SUCESSO: Campo adicionado|
+AVISO: update_list ATUALIZAR COMANDO DE CAMPO PERSONALIZADO ENVIADO - 6666|1101|new_field|TEXTO|ERRO: Campo não atualizado|
+AVISO: update_list ATUALIZAÇÃO DE COMANDO DE CAMPO PERSONALIZADO ENVIADO - 6666|1101|new_field|TEXTO|SUCESSO: Campo atualizado|
+AVISO: update_list COMANDO DE EXCLUSÃO DE CAMPO PERSONALIZADO ENVIADO - 6666|1101|new_field|TEXT|ERRO: Campo não excluído|
+AVISO: update_list COMANDO DE EXCLUSÃO DE CAMPO PERSONALIZADO ENVIADO - 6666|1101|new_field|TEXTO|SUCESSO: Campo excluído|
+
+
+
+
+
+-------------------------------------------------- ------------------------------
+list_info - informações resumidas sobre uma lista
+
+NOTA: o usuário da API para esta função deve ter o user_level definido como 8 ou superior e "modificar listas" habilitado
+
+CAMPOS OBRIGATÓRIOS-
+list_id - deve ser composto apenas por números, de 2 a 14 dígitos
+fonte - descrição do que originou a chamada da API (máximo de 20 caracteres)
+
+CAMPOS DE CONFIGURAÇÕES - (opcional)
+leads_counts - S ou N, incluirá as contagens de todos os leads e novos leads de status na resposta, o padrão é 'N'
+dialable_count - S ou N, usará as configurações de campanha da lista para fornecer uma contagem de quantos estão discáveis ​​no momento, o padrão é 'N'
+stage - o formato dos dados exportados: csv, tab, pipe (padrão)
+cabeçalho - incluir um cabeçalho (SIM) ou não (NÃO). Isso é opcional, o padrão é não incluir um cabeçalho
+archived_lead - S ou N, definir como S consultará apenas os leads vicidial_list_archive para a contagem de leads, o padrão é N.
+
+Exemplo de sequências de URL para chamadas de API:
+http://server/vicidial/non_agent_api.php?source=test&user=6666&pass=1234&function=list_info&list_id=1101&leads_counts=Y&header=YES
+
+Respostas de exemplo:
+ERRO: list_info O USUÁRIO NÃO TEM PERMISSÃO PARA MODIFICAR LISTAS - 6666
+ERRO: list_info VOCÊ DEVE USAR TODOS OS CAMPOS OBRIGATÓRIOS - 6666|1
+ERRO: list_info NÃO É UMA LISTA DE ID PERMITIDA - 98762
+ERRO: list_info LISTA NÃO EXISTE - 98762
+
+Uma resposta SUCCESS não mostrará "SUCCESS", mas apenas imprimirá os resultados nos seguintes formatos:
+
+list_id|list_name|campaign_id|active|list_changedate|list_lastcalldate|list_expiration_date|resets_today
+1101|lista de desempenho|TESTCAMP|Y|2019-09-02 08:52:50|2019-11-07 10:12:12|2099-12-31|0|
+
+list_id|list_name|campaign_id|active|list_changedate|list_lastcalldate|expiration_date|resets_today|all_leads_count|new_leads_count
+1101|lista de desempenho|TESTCAMP|Y|2019-09-02 08:52:50|2019-11-07 10:12:12|2099-12-31|0|59896|3
+
+
+
+
+
+-------------------------------------------------- ------------------------------
+list_custom_fields - mostra os campos de dados personalizados que estão em uma lista ou em todas as listas
+
+NOTA: o usuário da API para esta função deve ter o user_level definido como 8 ou superior e "modificar listas" habilitado
+OBSERVAÇÃO: esta saída não incluirá campos somente de exibição no FORMULÁRIO, apenas os campos de dados personalizados não padrão,
+      todos os elementos de formulário DISPLAY, SCRIPT e SWITCH serão ignorados
+
+CAMPOS OBRIGATÓRIOS-
+list_id - deve ser composto apenas por números, de 2 a 14 dígitos, OU use "---ALL---" para todas as listas
+fonte - descrição do que originou a chamada da API (máximo de 20 caracteres)
+
+CAMPOS DE CONFIGURAÇÕES - (opcional)
+stage - o formato dos dados exportados: csv, tab, pipe (padrão)
+cabeçalho - incluir um cabeçalho (SIM) ou não (NÃO). Isso é opcional, o padrão é não incluir um cabeçalho
+custom_order - a ordem para colocar os campos personalizados: table_order, alpha_up, alpha_down (o padrão é 'table_order')
+
+Exemplo de sequências de URL para chamadas de API:
+http://server/vicidial/non_agent_api.php?source=test&user=6666&pass=1234&function=list_custom_fields&list_id=1101&header=YES
+
+Respostas de exemplo:
+ERRO: list_custom_fields CAMPOS DE LISTA PERSONALIZADOS NÃO ESTÃO HABILITADOS NESTE SISTEMA - 6666
+ERRO: list_custom_fields O USUÁRIO NÃO TEM PERMISSÃO PARA MODIFICAR LISTAS - 6666
+ERRO: list_custom_fields VOCÊ DEVE USAR TODOS OS CAMPOS OBRIGATÓRIOS - 6666|1
+ERRO: list_custom_fields NÃO É UMA ID DE LISTA PERMITIDA - 98762
+ERRO: list_custom_fields LISTA NÃO EXISTE - 98762
+
+Uma resposta SUCCESS não mostrará "SUCCESS", mas apenas imprimirá os resultados nos seguintes formatos:
+
+list_id|list_name|campaign_id|active|list_changedate|list_lastcalldate|custom_fields_list_space_delimited
+1101|lista de desempenho|TESTCAMP|Y|2019-09-02 08:52:50|2019-11-07 10:12:12|fav_color fav_food res_city res_state res_zip
+
+
+
+
+
+-------------------------------------------------- ------------------------------
+check_phone_number - permite que você verifique se um número de telefone é válido e discável
+
+NOTA: o usuário da API para esta função deve ter o user_level definido como 8 ou superior
+
+CAMPOS OBRIGATÓRIOS-
+phone_number - deve ser todos números, 6-16 dígitos
+phone_code - deve ser composto apenas por números, de 1 a 4 dígitos, o padrão é 1 se não for definido
+local_call_time - deve ser um ID de tempo de chamada válido no sistema
+
+CAMPOS OPCIONAIS-
+postal_code - deve ter 5 dígitos. Funciona apenas para códigos postais dos EUA, necessário para POSTAL tz_method
+estado - deve ter 2 letras. Necessário somente se as regras de tempo de chamada de estado estiverem habilitadas
+proprietário - deve ter de 2 a 5 letras. Necessário somente se estiver usando TZCODE tz_method
+
+CAMPOS DE CONFIGURAÇÕES-
+dnc_check - Y, N ou AREACODE, o padrão é N
+campaign_dnc_check - S, N ou AREACODE, o padrão é N
+campaign_id - ID de campanha de 2 a 8 caracteres, necessário se estiver usando campaign_dnc_check
+usacan_prefix_check - S ou N, o padrão é N. Verifique se há um 4º dígito válido para números de telefone dos EUA e Canadá (não pode ser 0 ou 1)
+usacan_areacode_check - S ou N, o padrão é N. Verifique se há um código de área válido para números de telefone dos EUA e Canadá
+nanpa_ac_prefix_check - Y ou N, o padrão é N. Verifique se há um código de área e prefixo NANPA válidos, se houver dados NANPA opcionais no sistema
+tz_method - <empty>, POSTAL, TZCODE, NANPA ou AREACODE, o padrão é <empty> que usará o código do país e AREACODE para pesquisas de fuso horário
+				AREACODE depende do código de área do número de telefone
+				POSTAL depende do campo postal_code
+				O TZCODE depende do preenchimento do campo do proprietário com um código de fuso horário adequado
+				O NANPA depende dos dados de prefixo de código de área NANPA opcionais que estão sendo carregados no seu sistema
+				(NOTA: você pode fazer mais de um método ao mesmo tempo, por exemplo: "POSTALTZCODE")
+
+
+Exemplo de sequências de URL para chamadas de API:
+http://server/vicidial/non_agent_api.php?source=test&user=6666&pass=1234&function=check_phone_number&phone_number=7275551111&call_time=9am-9pm
+
+http://server/vicidial/non_agent_api.php?DB=0&source=test&function=check_phone_number&user=6666&pass=1234&owner=GST&postal_code=81009&phone_number=3125551212&local_call_time=9am-9pm&tz_method=AREACODEPOSTALNANPATZCODE
+
+
+Respostas de exemplo:
+
+ERRO: check_phone_number O USUÁRIO NÃO TEM PERMISSÃO PARA VERIFICAR NÚMEROS DE TELEFONE - |6666|0|
+ERRO: check_phone_number ESTE NÃO É UM HORÁRIO DE CHAMADA VÁLIDO - |6666|badct|
+ERRO: check_phone_number Opções NANPA desabilitadas, dados de prefixo NANPA não carregados - 0|6666
+ERRO: check_phone_number COMPRIMENTO DE NÚMERO DE TELEFONE INVÁLIDO - 72755|6666
+ERRO: check_phone_number PREFIXO DE NÚMERO DE TELEFONE INVÁLIDO - 72755|6666
+ERRO: check_phone_number NÚMERO DE TELEFONE INVÁLIDO CÓDIGO DE ÁREA - 72755|6666
+ERRO: check_phone_number NÚMERO DE TELEFONE INVÁLIDO PREFIXO DO CÓDIGO DE ÁREA NANPA - 7275551212|6666
+ERRO: check_phone_number NÚMERO DE TELEFONE NO DNC - 7275551112|6666
+
+Uma resposta de sucesso mostrará os resultados para cada tz_method usado (com 0 ou 1 para dialable e o deslocamento gmt) seguido por um hash "#" e então as informações do telefone depois:
+CÓDIGO DE ÁREA: 1|-6#TELEFONE: 3125551212|1||||
+CÓDIGO DE ÁREA: 1|-6#POSTAL: 1|-7.0#TZCODE: 0|10#NANPA: 1|-6#TELEFONE: 3125551212|1|81009||GST|
+
+
+
+
+
+-------------------------------------------------- ------------------------------
+logged_in_agents - lista de agentes que estão logados no sistema
+
+NOTA: o usuário da API para esta função deve ter o user_level definido como 7 ou superior e "visualizar relatórios" habilitado
+
+CAMPOS OBRIGATÓRIOS-
+fonte - descrição do que originou a chamada da API (máximo de 20 caracteres)
+
+CAMPOS OPCIONAIS-
+campanhas - lista delimitada por barras verticais de campanhas para obter informações de status para "TESTCAMP|INBOUND", o padrão é todas as campanhas mostradas
+user_groups - lista delimitada por barras verticais de grupos de usuários para obter informações de status para "ADMIN|AGENTS", o padrão é todos os grupos de usuários mostrados
+show_sub_status - mostra o substatus do agente e o pause_code, requer consulta de log, (SIM|NÃO) o padrão é NÃO
+
+CAMPOS DE CONFIGURAÇÕES-
+stage - o formato dos dados exportados: csv, tab, pipe (padrão)
+cabeçalho - incluir um cabeçalho (SIM) ou não (NÃO). Isso é opcional, o padrão é não incluir um cabeçalho
+
+Exemplo de sequências de URL para chamadas de API:
+http://server/vicidial/non_agent_api.php?source=test&user=6666&pass=1234&function=logged_in_agents&stage=csv&header=YES
+
+Respostas de exemplo:
+ERRO: O USUÁRIO logged_in_agents NÃO TEM PERMISSÃO PARA OBTER INFORMAÇÕES DO AGENTE - 6666|0
+ERRO: logged_in_agents NENHUM AGENTE LOGADO
+
+Uma resposta SUCCESS não mostrará "SUCCESS", mas apenas imprimirá os resultados no seguinte formato:
+usuário|id_da_campanha|id_da_sessão|status|id_do_lead|id_do_chamador|chamadas_hoje|nome_completo|grupo_de_usuários|nível_de_usuário
+6666|TESTCAMP|8600051|PAUSADO|1079409||1|Admin|ADMIN|9
+
+usuário,id_da_campanha,id_da_sessão,status,id_do_lead,id_do_chamador,chamadas_hoje,nome_completo,grupo_de_usuários,nível_de_usuário,código_de_pausa,sub_status
+6666,CAMP DE TESTE,8600051,INCALL,1079409,M2260919190001079409,1,Admin,ADMIN,9,LOGIN,MORTO
+4545,TESTCAMP,8600052,PAUSADO,0,,0,4545,MIKESGROUP,8,LOGIN,
+
+NOTA: o campo real_time_sub_status pode consistir em: DEAD, DISPO, 3-WAY, PARK, RING, PREVIEW, DIAL ou pode estar vazio
+
+
+
+
+
+-------------------------------------------------- ------------------------------
+call_status_stats - relatório sobre o número de chamadas feitas por campanha e grupo interno, com detalhamento por hora e status
+
+NOTA: o usuário da API para esta função deve ter o user_level definido como 8 ou superior e "visualizar relatórios" habilitado
+
+CAMPOS OBRIGATÓRIOS-
+campanhas - Campanhas para retornar estatísticas. Use "---ALL---" ou "ALLCAMPAIGNS" para todas as campanhas, ou use delimitadores de traço simples se
+                        solicitando mais de uma campanha específica
+
+CAMPOS OPCIONAIS-
+query_date - Data para relatar, deixe em branco para usar como padrão a data de hoje. Deve estar no formato AAAA-MM-DD
+ingroups - Lista de ingroups para relatar. Deixe em branco para todos os ingroups pertencentes às campanhas especificadas na variável "campaigns".
+		Use delimitadores de traço se estiver solicitando mais de um ingroup.
+statuses - Lista de status específicos para relatar. Deixe em branco para todos ou use delimitadores de traço se estiver solicitando mais de um status.
+
+
+Exemplo de sequências de URL para chamadas de API:
+http://server/vicidial/non_agent_api.php?user=6666&pass=1234&function=call_status_stats&campaigns=---ALL---&query_date=2017-11-24 (retorna todas as campanhas e grupos de 24/11/17)
+http://server/vicidial/non_agent_api.php?user=6666&pass=1234&function=call_status_stats&campaigns=TESTCAMP-TESTCAMP2&query_date=2017-11-24&statuses=NP-TD&ingroups=AGENTDIRECT
+(retorna contagens de estatísticas para campanhas TESTCAMP e TESTCAMP2, e AGENTDIRECT ingroup, para 24/11/27 para chamadas dispostas como NP e TD)
+
+
+Respostas de exemplo:
+ERRO: call_sta tus_stats CAMPANHAS INVÁLIDAS OU FALTANDO
+ERRO: O USUÁRIO auth NÃO TEM PERMISSÃO PARA USAR ESTA FUNÇÃO
+ERRO: call_status_stats O USUÁRIO NÃO TEM PERMISSÃO PARA VER ESTATÍSTICAS
+
+Uma resposta SUCCESS não mostrará "SUCCESS", mas apenas imprimirá os resultados no seguinte formato:
+campaign_id/ingroup|chamadas totais|chamadas atendidas por humanos|detalhamento por hora(contagem de HH,contagem de HH, etc...)|detalhamento de status(contagem de status,contagem de status, etc...)
+
+As análises por hora e status são delimitadas por vírgula, e cada contagem de hora/status é delimitada por traço, conforme visto abaixo:
+
+CAMPO DE TESTE|26|26|00-0,01-1,02-1,03-0,04-0,05-0,06-0,07-0,08-0,09-0,10-0,11-3,12-4,13-2,14-4,15-1,16-0,17-2,18-0,19-0,20-0,21-6,22-1,23-1|NP-4,TD-22|
+AGENTE DIRETO|2|2|00-0,01-0,02-0,03-0,04-0,05-0,06-0,07-0,08-0,09-0,10-0,11-1,12-1,13-0,14-0,15-0,16-0,17-0,18-0,19-0,20-0,21-0,22-0,23-0|TD-2|
+
+
+
+
+
+-------------------------------------------------- ------------------------------
+call_dispo_report - relatório de detalhamento de disposição de chamadas
+
+
+NOTA: o usuário da API para esta função deve ter o user_level definido como 9 e "visualizar relatórios" habilitado
+
+CAMPOS OBRIGATÓRIOS (um dos seguintes)-
+campanhas - Campanhas para retornar estatísticas. Use delimitadores de traço simples se estiver solicitando mais de uma campanha específica
+ingroups - In-Groups para retornar estatísticas. Use delimitadores de traço simples se estiver solicitando mais de um grupo de entrada específico
+dids - DIDs para retornar estatísticas. Use delimitadores de traço simples se estiver solicitando mais de um DID específico
+
+CAMPOS OPCIONAIS-
+query_date - Data para relatar, deixe em branco para usar como padrão a data de hoje. Deve estar no formato AAAA-MM-DD
+end_date - Data para relatar, deixe em branco para usar como padrão a data de hoje. Deve estar no formato AAAA-MM-DD
+statuses - Lista de status específicos para relatar. Deixe em branco para todos ou use delimitadores de traço se estiver solicitando mais de um status.
+categories - Lista de categorias de status específicas para relatar. Deixe em branco para todas ou use delimitadores de traço se estiver solicitando mais de uma categoria.
+usuários - Lista de usuários específicos para relatar. Use delimitadores de traço simples se estiver solicitando mais de um usuário específico
+status_breakdown - [0,1] Repartição de todos os status dentro dos elementos selecionados, padrão 0
+show_percentages - [0,1] (funciona somente se status_breakdown acima estiver habilitado), mostrará porcentagens de status, padrão 0
+file_download - [0,1] Baixar como um arquivo CSV, padrão 0
+
+
+Exemplo de sequências de URL para chamadas de API:
+http://server/vicidial/non_agent_api.php?source=test&user=6666&pass=1234&function=call_dispo_report&ingroups=TEST_IN3-TEST_IN2&query_date=2018-02-05&end_date=2018-02-07
+http://server/vicidial/non_agent_api.php?source=test&user=6666&pass=1234&function=call_dispo_report&ingroups=TEST_IN3-TEST_IN2&query_date=2018-02-05&end_date=2018-02-07&status_breakdown=1
+http://server/vicidial/non_agent_api.php?source=test&user=6666&pass=1234&function=call_dispo_report&did_patterns=7275551113&query_date=2018-02-05&end_date=2018-02-07&status_breakdown=1
+http://server/vicidial/non_agent_api.php?source=test&user=6666&pass=1234&function=call_dispo_report&ingroups=TEST_IN3-TEST_IN2&query_date=2018-02-05&end_date=2018-02-07&status_breakdown=1&show_percentages=1
+
+Respostas de exemplo:
+ERRO: call_dispo_report CAMPANHAS, INGROUPS OU DIDS INVÁLIDOS OU AUSENTES
+ERRO: call_dispo_report O USUÁRIO NÃO TEM PERMISSÃO PARA USAR ESTA FUNÇÃO
+ERRO: call_dispo_report O USUÁRIO NÃO TEM PERMISSÃO PARA VER ESTATÍSTICAS
+
+Uma resposta SUCCESS não mostrará "SUCCESS", mas apenas imprimirá os resultados no seguinte formato:
+
+CAMPANHA, TOTAL DE CHAMADAS
+TESTE_EM2,10
+TESTE_EM3.110
+TOTAL,120
+
+CAMPANHA, TOTAL DE CHAMADAS, ACFLTR, NP, WAITTO, CLOSOP, DROP, INCALL, RQXFER, TD, TESTAM
+TESTE_EM2,10,1,0,0,0,5,0,0,0,4
+TESTE_EM3,110,0,5,13,9,3,1,47,1,31
+TOTAL,120,1,5,13,9,8,1,47,1,35
+
+CAMPANHA, TOTAL DE CHAMADAS, ACFLTR, NP, WAITTO, CLOSOP, DROP, INCALL, RQXFER, TD, TESTAM
+TESTE_EM2,10,1 (10,0%),0 (0,0%),0 (0,0%),0 (0,0%),5 (50,0%),0 (0,0%),0 (0,0%),0 (0,0%),4 (40,0%)
+TESTE_EM3.110,0 (0,0%),5 (4,5%),13 (11,8%),9 (8,2%),3 (2,7%),1 (0,9%),47 (42,7%),1 (0,9%),31 ​​(28,2%)
+TOTAL,120,1 (0,8%),5 (4,2%),13 (10,8%),9 (7,5%),8 (6,7%),1 (0,8%),47 (39,2%),1 (0,8%),35 (29,2%)
+
+
+
+
+
+-------------------------------------------------- ------------------------------
+update_campaign - atualiza informações da campanha na tabela vicidial_campaigns
+
+NOTA: o usuário da API para esta função deve ter o user_level definido como 8 ou superior e "modificar campanhas" habilitado
+
+CAMPOS OBRIGATÓRIOS-
+campaign_id - 2-8 caracteres
+fonte - descrição do que originou a chamada da API (máximo de 20 caracteres)
+
+CAMPOS EDITÁVEIS-
+nome_da_campanha - 6-40 caracteres
+ativo - Deve ser um destes: 'S', 'N'
+auto_dial_level - 2-5 caracteres, deve estar dentro de um intervalo válido
+adaptive_maximum_level - 3-20 dígitos
+campaign_vdad_exten - 3-20 caracteres
+hopper_level - Deve ser de 1 a 2000
+reset_hopper - Deve ser um destes: 'S', 'N', o padrão será 'N'
+dial_method - Deve ser um destes: 'MANUAL','RATIO','INBOUND_MAN','ADAPT_AVERAGE','ADAPT_HARD_LIMIT','ADAPT_TAPERED'
+dial_timeout - Deve ser de 1 a 120
+list_order - Ordem em que os leads são discados, DEVE USAR CAIXA ADEQUADA! Alguns exemplos incluem 'UP', 'DOWN', 'RANDOM 2nd NEW', 'DOWN COUNT', etc...
+list_order_randomize - Randomiza o carregamento de leads do funil dentro da ordem da lista. Deve ser um destes: 'S', 'N'
+list_order_secondary - Pode ser definido como um destes: DEVE USAR LETRAS MAIÚSCULAS CORRETAS! Exemplos incluem 'LEAD_ASCEND','CALLTIME_DESCEND','VENDOR_ASCEND',etc...
+outbound_cid - 1-20 dígitos
+dial_status_add - 1-6 caracteres
+dial_status_remove - 1-6 caracteres
+lead_filter_id - Deve ser um filtro válido no sistema, ou '---NONE---' para não usar um filtro
+xferconf_one - Transferência - Conf Número 1: 1-50 caracteres
+xferconf_two - Transferir - Conf Número 2: 1-50 caracteres
+xferconf_three - Transferência - Conf Número 3: 1-50 caracteres
+xferconf_four - Transferência - Conf Número 4: 1-50 caracteres
+xferconf_five - Transferência - Conf Número 5: 1-50 caracteres
+dispo_call_url - URL para a URL do Dispo (se estiver usando uma URL não local completa, deve incluir 'http://' ou 'https://') Deve ser codificado por URL se estiver enviando a solicitação como uma URL
+	EXEMPLO DE URL CODIFICADA POR URL: "http://vicidial.org/query.php?var1=X&var2=y" = "http%3A%2F%2Fvicidial.org%2Fquery.php%3Fvar1%3DX%26var2%3Dy"
+NOTAS:
+ - não use caracteres especiais como apóstrofos, aspas ou e-feras
+
+Exemplo de sequências de URL para chamadas de API:
+http://server/vicidial/non_agent_api.php?source=test&user=6666&pass=1234&function=update_campaign&campaign_id=TESTOUT&campaign_name=Campanha+de+API+de+teste+atualizada&auto_dial_level=3.0
+http://server/vicidial/non_agent_api.php?source=test&user=6666&pass=1234&function=update_campaign&campaign_id=TESTOUT&active=N
+http://server/vicidial/non_agent_api.php?source=test&user=6666&pass=1234&function=update_campaign&campaign_id=TESTOUT&reset_hopper=Y
+http://server/vicidial/non_agent_api.php?source=test&user=6666&pass=1234&function=update_campaign&campaign_id=TESTOUT&dispo_call_url=http%3A%2F%2Fvicidial.org%2Fquery.php%3Fvar1%3DX%26var2%3Dy
+http://server/vicidial/non_agent_api.php?source=test&user=6666&pass=1234&function=update_campaign&campaign_id=TESTOUT&dispo_call_url=ALT
+http://server/vicidial/non_agent_api.php?source=test&user=6666&pass=1234&function=update_campaign&campaign_id=TESTOUT&dial_status_add=A2&dial_status_remove=A3&list_order=DOWN+COUNT
+
+Respostas de exemplo:
+ERRO: update_campaign O USUÁRIO NÃO TEM PERMISSÃO PARA ATUALIZAR CAMPANHAS - 6666
+ERRO: update_campaign VOCÊ DEVE USAR TODOS OS CAMPOS OBRIGATÓRIOS - 6666|1
+ERRO: update_campaign NÃO É UM ID DE CAMPANHA PERMITIDO - 98762
+ERRO: update_campaign CAMPANHA NÃO EXISTE - 6666|1000
+ERRO: update_campaign O NÍVEL DE DISCAGEM AUTOMÁTICA DEVE SER DE 0 A 18, ESTE É UM CAMPO OPCIONAL - 6666|012
+ERRO: update_campaign MÉTODO DE DISCAGEM NÃO É VÁLIDO, ESTE É UM CAMPO OPCIONAL - 6666|12
+ERRO: update_campaign ADAPT O NÍVEL MÁXIMO DE DISCAGEM DEVE TER DE 1 A 5 CARACTERES, ESTE É UM CAMPO OPCIONAL - 6666|12
+ERRO: update_campaign A EXTENSÃO DE ROUTING DEVE TER DE 3 A 20 CARACTERES, ESTE É UM CAMPO OPCIONAL - 6666|12
+ERRO: update_campaign O NÍVEL DO HOPPER DEVE SER DE 1 A 2000, ESTE É UM CAMPO OPCIONAL - 6666|12345
+ERRO: update_campaign TEMPO LIMITE DE DISCAGEM DEVE SER DE 1 A 120, ESTE É UM CAMPO OPCIONAL - 6666|123
+ERRO: update_campaign O NOME DA CAMPANHA DEVE TER DE 6 A 40 CARACTERES, ESTE É UM CAMPO OPCIONAL - 6666|test
+ERRO: update_campaign O CID DA CAMPANHA DEVE TER DE 6 A 20 CARACTERES, ESTE É UM CAMPO OPCIONAL - 6666|test
+ERRO: update_campaign O FILTRO DE LEAD DE CAMPANHA DEVE SER UM FILTRO VÁLIDO NO SISTEMA, ESTE É UM CAMPO OPCIONAL - 6666|test
+ERRO: update_campaign TRANSFER CONF NÚMERO UM NÃO É VÁLIDO, ESTE É UM CAMPO OPCIONAL - 6666|123456789012345678901234567890123456789012345678901
+ERRO: update_campaign TRANSFER CONF NÚMERO DOIS NÃO É VÁLIDO, ESTE É UM CAMPO OPCIONAL - 6666|123456789012345678901234567890123456789012345678901
+ERRO: update_campaign TRANSFER CONF NÚMERO TRÊS NÃO É VÁLIDO, ESTE É UM CAMPO OPCIONAL - 6666|123456789012345678901234567890123456789012345678901
+ERRO: update_campaign TRANSFER CONF NÚMERO QUATRO NÃO É VÁLIDO, ESTE É UM CAMPO OPCIONAL - 6666|123456789012345678901234567890123456789012345678901
+ERRO: update_campaign TRANSFER CONF NÚMERO CINCO NÃO É VÁLIDO, ESTE É UM CAMPO OPCIONAL - 6666|123456789012345678901234567890123456789012345678901
+ERRO: update_campaign ATIVO DEVE SER S OU N, ESTE É UM CAMPO OPCIONAL - 6666|U
+ERRO: update_campaign ORDEM DA LISTA INCLUINDO ALEATÓRIO NÃO SÃO PERMITIDAS, ESTE É UM CAMPO OPCIONAL - |6666|ALEATÓRIO 2º NOVO|
+ERRO: update_campaign A ORDEM DA LISTA NÃO É VÁLIDA, ESTE É UM CAMPO OPCIONAL - |6666|Y|
+ERRO: update_campaign A ORDEM DA LISTA NÃO TEM UM COMPRIMENTO VÁLIDO, ESTE É UM CAMPO OPCIONAL - |6666|Y|
+ERRO: update_campaign LIST ORDER RANDOMIZE NÃO É VÁLIDO, ESTE É UM CAMPO OPCIONAL - |6666|X|
+ERRO: update_campaign LIST ORDER RANDOMIZE NÃO É UM COMPRIMENTO VÁLIDO, ESTE É UM CAMPO OPCIONAL - |6666|SIM|
+ERRO: update_campaign LIST ORDER SECONDARY NÃO É VÁLIDO, ESTE É UM CAMPO OPCIONAL - |6666|Y|
+ERRO: update_campaign LIST ORDER SECONDARY NÃO É UM COMPRIMENTO VÁLIDO, ESTE É UM CAMPO OPCIONAL - |6666|LEAD|
+ERRO: update_campaign DIAL STATUS ADD NÃO É VÁLIDO, ESTE É UM CAMPO OPCIONAL - |6666|A1234567|
+ERRO: update_campaign FALHA NA ADIÇÃO DE STATUS DE DISCAGEM, MUITOS STATUS DE DISCAGEM EXISTENTES, ESTE É UM CAMPO OPCIONAL - |6666|A12345|
+ERRO: update_campaign STATUS DE DISCAGEM REMOVER NÃO É VÁLIDO, ESTE É UM CAMPO OPCIONAL - |6666|A1234567|
+ERRO: update_campaign FALHA NA REMOÇÃO DO STATUS DE DISCAGEM, NENHUM STATUS DE DISCAGEM EXISTENTE DEFINIDO, ESTE É UM CAMPO OPCIONAL - |666666|A12345|
+ERRO: update_campaign FALHA NA REMOÇÃO DO STATUS DE DISCAGEM, NÃO É UM STATUS DE DISCAGEM EXISTENTE, ESTE É UM CAMPO OPCIONAL - |666666|A12345|
+AVISO: update_campaign SEM ATUALIZAÇÕES DEFINIDAS - 6666|
+AVISO: update_campaign HOPPER FOI REINICIADO - 6666|1101|324
+SUCESSO: update_campaign A CAMPANHA FOI ATUALIZADA - 6666|1101
+
+
+
+
+
+-------------------------------------------------- ------------------------------
+update_alt_url - atualiza/adiciona/exibe entradas de URL de chamada de dispo alternativas para uma campanha
+
+NOTA: o usuário da API para esta função deve ter o user_level definido como 8 ou superior e "modificar campanhas" habilitado
+
+CAMPOS OBRIGATÓRIOS-
+campaign_id - 2-8 caracteres
+fonte - descrição do que originou a chamada da API (máximo de 20 caracteres)
+entry_type - Um destes: 'campanha'
+url_type - Um destes: 'dispo','start','adlead','noagent'
+alt_url_id - Somente dígitos, 'NEW' ou 'LIST'. Deve ser um ID de URL alt válido para esta campanha, ou definido como 'NEW' para adicionar um novo URL ALT
+			   OBSERVAÇÃO: se houver apenas uma URL alternativa para esta campanha e tipo, este campo pode ser deixado em branco.
+			   NOTA: as opções 'stage'(csv, tab, pipe[default]) e 'header'(YES, NO) estão disponíveis para um alt_url_id de 'LIST'
+
+CAMPOS EDITÁVEIS-
+ativo - Um destes: 'S', 'N', o padrão é 'N'
+url_rank - Apenas dígitos
+url_statuses - SOMENTE PARA URLs de DISPO! Lista de status de dispo para os quais esta URL está ativa, separados por espaços, ou seja: "SALE1 SALE2" ou pode ser definido como "---ALL---"
+url_description - Descrição de texto da URL alt
+url_lists - Listas para as quais a URL está ativa, separadas por espaços, ou seja: "101 102" ou pode ser definido como "" em branco para todas as listas
+url_call_length - Somente dígitos. Somente chamadas que tenham esse comprimento mínimo em segundos e maior, o padrão é 0
+url_address - URL para a URL Alt (se estiver usando uma URL não local completa, deve incluir 'http://' ou 'https://') Deve ser codificado por URL se estiver enviando a solicitação como uma URL
+	EXEMPLO DE URL CODIFICADA POR URL: "http://vicidial.org/query.php?var1=X&var2=y" = "http%3A%2F%2Fvicidial.org%2Fquery.php%3Fvar1%3DX%26var2%3Dy"
+NOTAS:
+ - Não use caracteres especiais como apóstrofos, aspas ou e-feras
+ - Um valor de '--BLANK--' pode ser usado nas opções url_description e url_lists acima para definir seus valores como vazios
+
+Exemplo de sequências de URL para chamadas de API:
+http://server/vicidial/non_agent_api.php?source=test&user=6666&pass=1234&function=update_alt_url&campaign_id=ALTTEST&entry_type=campanha&url_type=dispo&alt_url_id=3&active=N
+http://server/vicidial/non_agent_api.php?source=test&user=6666&pass=1234&function=update_alt_url&campaign_id=ALTTEST&entry_type=campanha&url_type=dispo&alt_url_id=3&url_rank=2
+http://server/vicidial/non_agent_api.php?source=test&user=6666&pass=1234&function=update_alt_url&campaign_id=ALTTEST&entry_type=campanha&url_type=dispo&alt_url_id=3&url_statuses=SALE+PSALE
+http://server/vicidial/non_agent_api.php?source=test&user=6666&pass=1234&function=update_alt_url&campaign_id=ALTTEST&entry_type=campanha&url_type=dispo&alt_url_id=3&url_description=URL+DE+VENDA+atualizada
+http://server/vicidial/non_agent_api.php?source=test&user=6666&pass=1234&function=update_alt_url&campaign_id=ALTTEST&entry_type=campanha&url_type=dispo&alt_url_id=3&url_lists=101+102
+http://server/vicidial/non_agent_api.php?source=test&user=6666&pass=1234&function=update_alt_url&campaign_id=ALTTEST&entry_type=campanha&url_type=dispo&alt_url_id=3&url_call_length=2
+http://server/vicidial/non_agent_api.php?source=test&user=6666&pass=1234&function=update_alt_url&campaign_id=ALTTEST&entry_type=campanha&url_type=dispo&alt_url_id=3&url_address=http%3A%2F%2Fvicidial.org%2Fquery.php%3Fvar1%3DX%26var2%3Dy
+http://server/vicidial/non_agent_api.php?source=test&user=6666&pass=1234&function=update_alt_url&campaign_id=ALTTEST&entry_type=campanha&url_type=dispo&alt_url_id=LIST
+http://server/vicidial/non_agent_api.php?source=test&user=6666&pass=1234&function=update_alt_url&campaign_id=ALTTEST&entry_type=campanha&url_type=dispo&alt_url_id=NOVO&url_statuses=PRQUAL&url_description=Teste&url_address=http%3A%2F%2Fvicidial.org%2Fquery.php%3Fvar1%3DX%26var2%3Dy
+
+
+Respostas de exemplo:
+ERRO: update_alt_url O USUÁRIO NÃO TEM PERMISSÃO PARA ATUALIZAR CAMPANHAS - 6666
+ERRO: update_alt_url VOCÊ DEVE USAR TODOS OS CAMPOS OBRIGATÓRIOS - 6666|1
+ERRO: update_alt_url NÃO É UM ID DE CAMPANHA PERMITIDO - 98762
+ERRO: update_alt_url CAMPANHA NÃO EXISTE - 6666|1000
+ERRO: update_alt_url NENHUM TIPO DE URL VÁLIDO DEFINIDO: - 6666|||
+ERRO: update_alt_url NENHUM TIPO DE ENTRADA DEFINIDO - 6666||
+ERRO: update_alt_url URL de dispo das CAMPANHAS NÃO ESTÁ DEFINIDO COMO ALT - 6666|dispo|campanha|TESTCAMP
+ERRO: update_alt_url ALT URL ID NÃO EXISTE - 6666|2|dispo|campaign|TESTCAMP|2
+ERRO: update_alt_url ATIVO DEVE SER S OU N, ESTE É UM CAMPO OPCIONAL - 6666|U
+ERRO: update_alt_url ENDEREÇO ​​DE URL NÃO É VÁLIDO, ESTE É UM CAMPO OPCIONAL - 6666|
+ERRO: update_alt_url A CLASSIFICAÇÃO DO URL NÃO É VÁLIDA, ESTE É UM CAMPO OPCIONAL - 6666|999999
+ERRO: update_alt_url URL CAL LENGTH NÃO É VÁLIDO, ESTE É UM CAMPO OPCIONAL - 6666|999999
+ERRO: update_alt_url URL STATUSES NÃO É VÁLIDO, ESTE É UM CAMPO OPCIONAL - 6666|
+ERRO: update_alt_url A DESCRIÇÃO DO URL NÃO É VÁLIDA, ESTE É UM CAMPO OPCIONAL - 6666|
+ERRO: update_alt_url LISTAS DE URL NÃO SÃO VÁLIDAS, ESTE É UM CAMPO OPCIONAL - 6666|
+AVISO: update_campaign SEM ATUALIZAÇÕES DEFINIDAS - 6666|
+SUCESSO: update_alt_url ALT URL FOI ATUALIZADO - 6666|1|dispo|campaign|TESTCAMP
+SUCESSO: update_alt_url ALT URL FOI ADICIONADO - 6666|NOVA ID DE URL: 2|dispo|campanha|TESTCAMP
+AVISO: update_alt_url LIST, Nenhum registro encontrado - 6666|dispo|campaign|TESTCAMP|0
+
+Uma resposta LIST não mostrará "SUCESSO", mas apenas imprimirá os resultados no seguinte formato:
+url_id|campanha_id|entrada_tipo|ativo|url_tipo|url_rank|url_status|url_description|url_lists|url_call_length|url_address
+3|ALTTEST|campanha|Y|dispo|2|SALE PSALE|URL DE VENDA atualizada||2|http://vicidial.org/query.php?var1=X&var2=y
+
+
+
+
+
+-------------------------------------------------- ------------------------------
+update_presets - atualiza/adiciona/exibe/exclui entradas de predefinições de campanha
+
+NOTA: o usuário da API para esta função deve ter o user_level definido como 8 ou superior e "modificar campanhas" habilitado
+
+CAMPOS OBRIGATÓRIOS-
+campaign_id - 2-8 caracteres
+fonte - descrição do que originou a chamada da API (máximo de 20 caracteres)
+preset_name - nome da predefinição no sistema
+			   NOTA: Se existir apenas uma predefinição para esta campanha, este campo pode ser deixado em branco
+ação - 'ATUALIZAR', 'NOVO', 'EXCLUIR' ou 'LISTAR' (o padrão é 'ATUALIZAR')
+			   NOTA: as opções 'stage'(csv, tab, pipe[default]) e 'header'(YES, NO) estão disponíveis para uma ação de 'LIST'
+
+CAMPOS EDITÁVEIS-
+preset_hide_number - Um destes: 'S', 'N', o padrão é 'N'
+preset_number - Somente dígitos (deve ter de 1 a 50 dígitos de comprimento)
+preset_dtmf - Apenas dígitos e certos caracteres ('0123456789PSQ' [P = #-libra, S = *-estrela, Q = meio-segundo-silêncio])
+
+NOTAS:
+ - Não use caracteres especiais como apóstrofos, aspas ou e-feras
+ - Um valor de '--BLANK--' pode ser usado na opção preset_dtmf acima para definir seu valor como vazio
+
+Exemplo de sequências de URL para chamadas de API:
+http://server/vicidial/non_agent_api.php?source=test&user=6666&pass=1234&function=update_presets&campaign_id=ALTTEST&preset_name=SALES&preset_number=3125551212&preset_hide_number=N&action=NEW
+http://server/vicidial/non_agent_api.php?source=test&user=6666&pass=1234&function=update_presets&campaign_id=ALTTEST&preset_number=3125551213&preset_hide_number=N&preset_dtmf=1234
+http://server/vicidial/non_agent_api.php?source=test&user=6666&pass=1234&function=update_presets&campaign_id=ALTTEST&action=LIST
+http://server/vicidial/non_agent_api.php?source=test&user=6666&pass=1234&function=update_presets&campaign_id=ALTTEST&preset_name=SUPPORT+LINE&preset_number=3125551214&preset_hide_number=Y&preset_dtmf=1&action=NEW
+http://server/vicidial/non_agent_api.php?source=test&user=6666&pass=1234&function=update_presets&campaign_id=ALTTEST&preset_name=SUPPORT+LINE&action=DELETE
+
+
+Respostas de exemplo:
+ERRO: update_presets O USUÁRIO NÃO TEM PERMISSÃO PARA ATUALIZAR CAMPANHAS - 6666
+ERRO: update_presets VOCÊ DEVE USAR TODOS OS CAMPOS OBRIGATÓRIOS - 6666|1
+ERRO: update_presets NÃO É UM ID DE CAMPANHA PERMITIDO - 98762
+ERRO: update_presets CAMPANHA NÃO EXISTE - 6666|1000
+ERRO: update_presets NOME DA PREDEFINIÇÃO NÃO EXISTE - 6666|2|dispo|campaign|TESTCAMP|2
+ERRO: update_presets NÚMERO DE OCULTAÇÃO DE PREDEFINIÇÃO DEVE SER S OU N, ESTE É UM CAMPO OPCIONAL - 6666|U
+ERRO: update_presets PRESET DTMF NÃO É VÁLIDO, ESTE É UM CAMPO OPCIONAL - 6666|
+AVISO: update_campaign SEM ATUALIZAÇÕES DEFINIDAS - 6666|
+SUCESSO: update_presets PRESET FOI ATUALIZADO - 6666|1|campanha|TESTCAMP
+SUCESSO: update_presets PRESET FOI ADICIONADO - 6666|NOVA PRESET: LINHA DE SUPORTE|TESTCAMP
+SUCESSO: update_presets PRESET FOI EXCLUÍDO - 6666|LINHA DE SUPORTE|CAMP DE TESTES
+AVISO: update_presets LIST, Nenhum registro encontrado - 6666|TESTCAMP|0
+
+Uma resposta LIST não mostrará "SUCESSO", mas apenas imprimirá os resultados no seguinte formato:
+nome_predefinido|id_da_campanha|número_predefinido|número_ocultar_predefinido|dtmf_predefinido
+VENDAS|ALTESTE|3125551213|N|1234
+
+
+
+
+-------------------------------------------------- ------------------------------
+add_did - adiciona novas entradas DID de entrada ao sistema na tabela vicidial_inbound_dids
+
+NOTA: o usuário da API para esta função deve ter o user_level definido como 8 ou superior e "Modificar DIDs" habilitado
+
+CAMPOS OBRIGATÓRIOS-
+did_pattern - 2-50 caracteres
+			   NOTA: caracteres especiais no did_pattern precisam ser codificados em URL, por exemplo, o sinal de mais '+' deve ser enviado como '%2B'
+fonte - descrição do que originou a chamada da API (máximo de 20 caracteres)
+
+CAMPOS EDITÁVEIS-
+did_description - 6-50 caracteres
+ativo - Deve ser um destes: 'S', 'N'
+did_route - deve ser um destes: 'EXTEN','VOICEMAIL','AGENT','PHONE','IN_GROUP','CALLMENU','VMAIL_NO_INST'
+record_call - deve ser um destes: 'Y','N','Y_QUEUESTOP'
+extensão - 1-50 dígitos
+exten_context - 1-50 caracteres
+voicemail_ext - 1-10 dígitos
+phone_extension - 1-100 caracteres
+server_ip - deve ser composto apenas por números e pontos, máximo de 15 caracteres
+grupo - um group_id válido dentro do grupo
+menu_id - um menu de chamada válido menu_id
+filter_clean_cid_number - 1-20 caracteres
+call_handle_method - Se a rota for IN_GROUP, este é o método de tratamento de chamadas (CID, CIDLOOKUP, CLOSER, etc...), padrão 'CID'
+agent_search_method - Se a rota for IN_GROUP, este é o método de pesquisa do agente (LO = Load-Balanced-Overflow, LB = Load-Balanced, SO = Server-Only), padrão 'LB'
+list_id - Se a rota for IN_GROUP, este é o ID da lista (3-12 dígitos), padrão '999'
+entry_list_id - Se a rota for IN_GROUP, este é o ID da lista de entradas (1-12 dígitos), padrão '0'
+campaign_id - Se a rota for IN_GROUP, este é o ID da campanha, padrão ''
+phone_code - Se a rota for IN_GROUP, este é o código do telefone, padrão '1'
+
+Exemplo de sequências de URL para chamadas de API:
+http://server/vicidial/non_agent_api.php?source=test&user=6666&pass=1234&function=add_did&did_pattern=%2B1727555112&did_description=API+de+teste+atualizada+DID&active=Y
+http://server/vicidial/non_agent_api.php?source=test&user=6666&pass=1234&function=add_did&did_pattern=7275553331&did_description=Testando+DID&active=N&did_route=EXTEN&record_call=Y_QUEUESTOP&extension=8300&exten_context=notdefault&voicemail_ext=8301&phone_extension=55000&server_ip=192.168.198.5&group=TEST_IN2&filter_clean_cid_number=R10
+
+Respostas de exemplo:
+ERRO: add_did O USUÁRIO NÃO TEM PERMISSÃO PARA ADICIONAR DIDS - 6666
+ERRO: add_did VOCÊ DEVE USAR TODOS OS CAMPOS OBRIGATÓRIOS - 6666|1
+ERRO: add_did NÃO É UM DID PERMITIDO - 98762
+ERRO: add_did JÁ EXISTE - 6666|1000
+ERRO: add_did A DESCRIÇÃO DID DEVE TER DE 6 A 50 CARACTERES, ESTE É UM CAMPO OPCIONAL - 6666|012
+ERRO: add_did ATIVO DEVE SER S OU N, ESTE É UM CAMPO OPCIONAL - 6666|U
+ERRO: add_did DID ROUTE NÃO É VÁLIDO, ESTE É UM CAMPO OPCIONAL - 6666|12
+ERRO: add_did A CHAMADA DE REGISTRO DEVE SER S OU N, ESTE É UM CAMPO OPCIONAL - 6666|
+ERRO: add_did A EXTENSÃO DEVE TER DE 1 A 50 CARACTERES, ESTE É UM CAMPO OPCIONAL - 6666|
+ERRO: add_did O CONTEXTO DA EXTENSÃO DEVE TER DE 1 A 50 CARACTERES, ESTE É UM CAMPO OPCIONAL - 6666|
+ERRO: add_did A EXTENSÃO DO CORREIO DE VOZ DEVE TER DE 1 A 10 CARACTERES, ESTE É UM CAMPO OPCIONAL - 6666|
+ERRO: add_did A EXTENSÃO DO TELEFONE DEVE TER DE 1 A 100 CARACTERES, ESTE É UM CAMPO OPCIONAL - 6666|
+ERRO: add_did O IP DO SERVIDOR DEVE SER UM SERVIDOR VÁLIDO NO SISTEMA, ESTE É UM CAMPO OPCIONAL - 6666|0.0.0.0
+ERRO: add_did ID DO GRUPO DEVE SER UM GRUPO DE ENTRADA VÁLIDO NO SISTEMA, ESTE É UM CAMPO OPCIONAL - 6666|test
+ERRO: add_did ID DO MENU DEVE SER UM MENU DE CHAMADA VÁLIDO NO SISTEMA, ESTE É UM CAMPO OPCIONAL - 6666|test_menu
+ERRO: add_did O NÚMERO CID LIMPO DEVE TER DE 1 A 20 CARACTERES, ESTE É UM CAMPO OPCIONAL - 6666|
+ERRO: add_did O MÉTODO DE MANIPULAÇÃO DE CHAMADA DEVE TER DE 3 A 20 CARACTERES, ESTE É UM CAMPO OPCIONAL - 6666|1
+ERRO: add_did O MÉTODO DE PESQUISA DO AGENTE DEVE TER 2 CARACTERES, ESTE É UM CAMPO OPCIONAL - 6666|1
+ERRO: add_did LIST ID DEVE TER DE 3 A 14 DÍGITOS, ESTE É UM CAMPO OPCIONAL - 6666|1
+ERRO: add_did O ID DA LISTA DE ENTRADAS DEVE TER DE 1 A 14 DÍGITOS, ESTE É UM CAMPO OPCIONAL - 6666|9999999999999999
+ERRO: add_did A CAMPANHA DEVE TER DE 1 A 8 CARACTERES, ESTE É UM CAMPO OPCIONAL - 6666|TESTCAMPS
+ERRO: add_did O CÓDIGO DO TELEFONE DEVE TER DE 1 A 10 CARACTERES, ESTE É UM CAMPO OPCIONAL - 6666|99999999999
+SUCESSO: add_did DID FOI ADICIONADO - 6666|1101
+
+
+
+
+
+-------------------------------------------------- ------------------------------
+copy_did - adiciona novas entradas DID de entrada ao sistema, copiadas de uma entrada DID existente
+
+NOTA: o usuário da API para esta função deve ter o user_level definido como 8 ou superior e "Modificar DIDs" habilitado
+
+CAMPOS OBRIGATÓRIOS-
+source_did_pattern - 2-50 caracteres, deve ser um DID válido no sistema
+			   NOTA: caracteres especiais no source_did_pattern precisam ser codificados em URL, por exemplo, o sinal de mais '+' deve ser enviado como '%2B'
+new_dids - 2-2000 caracteres, para vários DIDs, separe com uma vírgula
+			   NOTA: caracteres especiais em new_dids precisam ser codificados em URL, por exemplo, o sinal de mais '+' deve ser enviado como '%2B'
+fonte - descrição do que originou a chamada da API (máximo de 20 caracteres)
+
+CAMPOS OPCIONAIS-
+did_description - 6 a 50 caracteres, se deixado em branco, a descrição DID de origem será usada
+
+Exemplo de sequências de URL para chamadas de API:
+http://server/vicidial/non_agent_api.php?source=test&user=6666&pass=1234&function=copy_did&source_did_pattern=%2B1727555112&did_description=API+de+teste+atualizada+DID&new_dids=%2B1727555119
+http://server/vicidial/non_agent_api.php?source=test&user=6666&pass=1234&function=copy_did&source_did_pattern=7275551114&new_dids=7275553338,7275553337,7275553336
+
+Respostas de exemplo:
+ERRO: copy_did O USUÁRIO NÃO TEM PERMISSÃO PARA ADICIONAR DIDS - 6666
+ERRO: copy_did VOCÊ DEVE USAR TODOS OS CAMPOS OBRIGATÓRIOS - 6666|1|1
+ERRO: copy_did NÃO É UM DID PERMITIDO - 98762
+ERRO: copy_did A DESCRIÇÃO DID DEVE ESTAR EM BRANCO OU TER DE 6 A 50 CARACTERES, ESTE É UM CAMPO OPCIONAL - 6666|012
+AVISO: copy_did JÁ EXISTIA - 6666|1000
+AVISO: copy_did DID FOI ADICIONADO - 6666|1000|1001|12|1
+ERRO: copy_did NENHUM DIDS ADICIONADO - 6666|1000|0|1
+SUCESSO: copy_did DIDS FORAM ADICIONADOS - 6666|1000|1|0
+
+NOTA: Se houver tentativa de copiar DIDs, haverá uma saída para cada DID tentado, bem como uma mensagem de SUCESSO se algum foi copiado com sucesso ou um ERRO se nenhum foi copiado com sucesso.
+
+
+
+
+
+-------------------------------------------------- ------------------------------
+update_did - atualiza informações de DID de entrada na tabela vicidial_inbound_dids
+
+NOTA: o usuário da API para esta função deve ter o user_level definido como 8 ou superior e "Modificar DIDs" habilitado
+
+CAMPOS OBRIGATÓRIOS-
+did_pattern - 2-50 caracteres, deve ser um DID válido no sistema
+			   NOTA: caracteres especiais no did_pattern precisam ser codificados em URL, por exemplo, o sinal de mais '+' deve ser enviado como '%2B'
+fonte - descrição do que originou a chamada da API (máximo de 20 caracteres)
+
+CAMPOS EDITÁVEIS-
+did_description - 6-50 caracteres
+ativo - Deve ser um destes: 'S', 'N'
+did_route - deve ser um destes: 'EXTEN','VOICEMAIL','AGENT','PHONE','IN_GROUP','CALLMENU','VMAIL_NO_INST'
+record_call - deve ser um destes: 'Y','N','Y_QUEUESTOP'
+extensão - 1-50 dígitos
+exten_context - 1-50 caracteres
+voicemail_ext - 1-10 dígitos
+phone_extension - 1-100 caracteres
+server_ip - deve ser composto apenas por números e pontos, máximo de 15 caracteres
+grupo - um group_id válido dentro do grupo
+menu_id - um menu de chamada válido menu_id
+filter_clean_cid_number - 1-20 caracteres
+call_handle_method - Se a rota for IN_GROUP, este é o método de tratamento de chamadas (CID, CIDLOOKUP, CLOSER, etc...), padrão 'CID'
+agent_search_method - Se a rota for IN_GROUP, este é o método de pesquisa do agente (LO = Load-Balanced-Overflow, LB = Load-Balanced, SO = Server-Only), padrão 'LB'
+list_id - Se a rota for IN_GROUP, este é o ID da lista (3-12 dígitos), padrão '999'
+entry_list_id - Se a rota for IN_GROUP, este é o ID da lista de entradas (1-12 dígitos), padrão '0'
+campaign_id - Se a rota for IN_GROUP, este é o ID da campanha, padrão ''
+phone_code - Se a rota for IN_GROUP, este é o código do telefone, padrão '1'
+delete_did - Pode ser um destes: 'Y','N' (o padrão é 'N')
+
+Exemplo de sequências de URL para chamadas de API:
+http://server/vicidial/non_agent_api.php?source=test&user=6666&pass=1234&function=update_did&did_pattern=%2B1727555112&did_description=API+de+teste+atualizada+DID&active=Y
+http://server/vicidial/non_agent_api.php?source=test&user=6666&pass=1234&function=update_did&did_pattern=7275553331&did_description=Testando+DID&active=N&did_route=EXTEN&record_call=Y_QUEUESTOP&extension=8300&exten_context=notdefault&voicemail_ext=8301&phone_extension=55000&server_ip=192.168.198.5&group=TEST_IN2&filter_clean_cid_number=R10
+
+Respostas de exemplo:
+ERRO: update_did O USUÁRIO NÃO TEM PERMISSÃO PARA ATUALIZAR DIDS - 6666
+ERRO: update_did O USUÁRIO NÃO TEM PERMISSÃO PARA EXCLUIR DIDS - 6666
+ERRO: update_did VOCÊ DEVE USAR TODOS OS CAMPOS OBRIGATÓRIOS - 6666|1
+ERRO: update_did NÃO É UM DID PERMITIDO - 98762
+ERRO: update_did DID NÃO EXISTE - 6666|1000
+ERRO: update_did A DESCRIÇÃO DID DEVE TER DE 6 A 50 CARACTERES, ESTE É UM CAMPO OPCIONAL - 6666|012
+ERRO: update_did ATIVO DEVE SER S OU N, ESTE É UM CAMPO OPCIONAL - 6666|U
+ERRO: update_did DID ROUTE NÃO É VÁLIDO, ESTE É UM CAMPO OPCIONAL - 6666|12
+ERRO: update_did A CHAMADA DE REGISTRO DEVE SER S OU N, ESTE É UM CAMPO OPCIONAL - 6666|
+ERRO: update_did A EXTENSÃO DEVE TER DE 1 A 50 CARACTERES, ESTE É UM CAMPO OPCIONAL - 6666|
+ERRO: update_did O CONTEXTO DA EXTENSÃO DEVE TER DE 1 A 50 CARACTERES, ESTE É UM CAMPO OPCIONAL - 6666|
+ERRO: update_did A EXTENSÃO DO CORREIO DE VOZ DEVE TER DE 1 A 10 CARACTERES, ESTE É UM CAMPO OPCIONAL - 6666|
+ERRO: update_did A EXTENSÃO DO TELEFONE DEVE TER DE 1 A 100 CARACTERES, ESTE É UM CAMPO OPCIONAL - 6666|
+ERRO: update_did O IP DO SERVIDOR DEVE SER UM SERVIDOR VÁLIDO NO SISTEMA, ESTE É UM CAMPO OPCIONAL - 6666|0.0.0.0
+ERRO: update_did O ID DO GRUPO DEVE SER UM GRUPO DE ENTRADA VÁLIDO NO SISTEMA, ESTE É UM CAMPO OPCIONAL - 6666|test
+ERRO: update_did O ID DO MENU DEVE SER UM MENU DE CHAMADA VÁLIDO NO SISTEMA, ESTE É UM CAMPO OPCIONAL - 6666|test_menu
+ERRO: update_did O NÚMERO CID LIMPO DEVE TER DE 1 A 20 CARACTERES, ESTE É UM CAMPO OPCIONAL - 6666|
+ERRO: update_did O MÉTODO DE MANIPULAÇÃO DE CHAMADA DEVE TER DE 3 A 20 CARACTERES, ESTE É UM CAMPO OPCIONAL - 6666|1
+ERRO: update_did O MÉTODO DE PESQUISA DO AGENTE DEVE TER 2 CARACTERES, ESTE É UM CAMPO OPCIONAL - 6666|1
+ERRO: update_did LIST ID DEVE TER DE 3 A 14 DÍGITOS, ESTE É UM CAMPO OPCIONAL - 6666|1
+ERRO: update_did O ID DA LISTA DE ENTRADAS DEVE TER DE 1 A 14 DÍGITOS, ESTE É UM CAMPO OPCIONAL - 6666|9999999999999999
+ERRO: update_did A CAMPANHA DEVE TER DE 1 A 8 CARACTERES, ESTE É UM CAMPO OPCIONAL - 6666|TESTCAMPS
+ERRO: update_did O CÓDIGO DO TELEFONE DEVE TER DE 1 A 10 CARACTERES, ESTE É UM CAMPO OPCIONAL - 6666|99999999999
+AVISO: update_did NENHUMA ATUALIZAÇÃO DEFINIDA - 6666|
+SUCESSO: update_did DID FOI EXCLUÍDO - 6666|23|1101
+SUCESSO: update_did DID FOI ATUALIZADO - 6666|1101
+
+
+
+
+
+-------------------------------------------------- ------------------------------
+update_cid_group_entry - atualiza entradas do grupo CID na tabela vicidial_campaign_cid_areacodes
+
+OBSERVAÇÃO: o usuário da API para esta função deve ter o user_level definido como 8 ou superior e "Modificar campanhas" habilitado
+
+CAMPOS OBRIGATÓRIOS-
+cid_group_id - 2 a 20 caracteres, deve ser um ID de grupo CID ou ID de campanha válido no sistema
+fonte - descrição do que originou a chamada da API (máximo de 20 caracteres)
+areacode - Deve ser AREACODE (ou seja, "312") ou STATE (ou seja, "FL") ou NONE da entrada do Grupo CID. Você também pode definir isso como "---ALL---"
+estágio - ATUALIZAR, ADICIONAR, EXCLUIR ou INFORMAR
+
+CAMPOS OPCIONAIS-
+outbound_cid - 1-20 dígitos, ou (se você quiser ATUALIZAR, EXCLUIR ou INFORMAR todas as entradas para um código de área, você pode definir isso como "---ALL---" ou deixar em branco)
+
+CAMPOS EDITÁVEIS-
+cid_description - 6-50 caracteres, o padrão é em branco
+ativo - Deve ser um destes: 'S', 'N', o padrão é 'N'
+
+Exemplo de sequências de URL para chamadas de API:
+http://server/vicidial/non_agent_api.php?source=test&user=6666&pass=1234&function=update_cid_group_entry&stage=INFO&cid_group_id=TESTINX5&areacode=---ALL---
+http://server/vicidial/non_agent_api.php?source=test&user=6666&pass=1234&function=update_cid_group_entry&stage=ADD&cid_group_id=testing_here4&areacode=312&outbound_cid=3125551212&cid_description=Testing+DID&active=N
+http://server/vicidial/non_agent_api.php?source=test&user=6666&pass=1234&function=update_cid_group_entry&stage=DELETE&cid_group_id=testing_here4&areacode=312&outbound_cid=3125551212
+http://server/vicidial/non_agent_api.php?source=test&user=6666&pass=1234&function=update_cid_group_entry&stage=UPDATE&cid_group_id=testing_here4&areacode=312&outbound_cid=3125551212&active=Y
+http://server/vicidial/non_agent_api.php?source=test&user=6666&pass=1234&function=update_cid_group_entry&stage=UPDATE&cid_group_id=testing_here4&areacode=312&outbound_cid=---ALL---&active=N&cid_description=Desativado+por+agora
+
+Respostas de exemplo:
+ERRO: update_cid_group_entry O USUÁRIO NÃO TEM PERMISSÃO PARA ATUALIZAR GRUPOS CID - 6666
+ERRO: update_cid_group_entry VOCÊ DEVE USAR TODOS OS CAMPOS OBRIGATÓRIOS - 6666|1||
+ERRO: update_cid_group_entry NÃO É UM GRUPO CID PERMITIDO - 98762
+ERRO: update_cid_group_entry GRUPO CID NÃO EXISTE - 6666|1000
+ERRO: update_cid_group_entry ESTE GRUPO CID NÃO TEM ENTRADAS - 6666|1000
+SUCESSO: update_cid_group_entry INFORMAÇÕES DO GRUPO CID COMO SEGUE - 1101|---ALL---|---ALL---|3
+1|727|7275551212|N|teste FL1|0
+2|727|7275551313|N|Teste FL1|0
+4|998|7275551114|N|Teste FL2|0
+
+ERRO: update_cid_group_entry VOCÊ DEVE DEFINIR UM CÓDIGO DE ÁREA AO ADICIONAR UMA ENTRADA - 6666|1000|---ALL---
+ERRO: update_cid_group_entry VOCÊ DEVE DEFINIR UM NÚMERO CID AO ADICIONAR UMA ENTRADA - 6666|1000|1
+ERRO: update_cid_group_entry ESTA ENTRADA DE GRUPO CID JÁ EXISTE - 6666|1000|813|8135551212
+SUCESSO: update_cid_group_entry ENTRADA DE GRUPO CID FOI ADICIONADA - 6666|1101|813|8135551212|1
+SUCESSO: update_cid_group_entry AS ENTRADAS DO GRUPO CID FORAM EXCLUÍDAS - 6666|1101|813|8135551212|1
+ERRO: update_cid_group_entry NENHUMA ATUALIZAÇÃO DEFINIDA - 6666|813|8135551212||
+SUCESSO: update_cid_group_entry AS ENTRADAS DO GRUPO CID FORAM ATUALIZADAS - 6666|1101|813|8135551212|1
+
+
+
+ERRO: NENHUMA FUNÇÃO ESPECIFICADA

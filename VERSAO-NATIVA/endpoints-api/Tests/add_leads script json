@@ -1,0 +1,28 @@
+{
+  "source": "vicibox",
+  "user": "intervia",
+  "pass": "BaLi2254X",
+  "function": "add_lead",
+  "campaign_id": "1001",
+  "list_id": "1002",
+  "leads": [
+    {
+      "first_name": "Rodrigo",
+      "last_name": "Ferreira",
+      "phone_number": "011945386300",
+      "phone_code": "55"
+    },
+    {
+      "first_name": "João",
+      "last_name": "Silva",
+      "phone_number": "011945386301",
+      "phone_code": "55"
+    },
+    {
+      "first_name": "Maria",
+      "last_name": "Oliveira",
+      "phone_number": "011945386302",
+      "phone_code": "55"
+    }
+  ]
+}
