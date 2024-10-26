@@ -6,12 +6,7 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Http\Request;
 use App\Models\Campaign;
 use App\Models\VicidialUser;
-
-namespace App\Http\Controllers;
-
-use Illuminate\Support\Facades\Validator;
-use Illuminate\Http\Request;
-use App\Models\Campaign;
+use Illuminate\Support\Facades\DB; 
 
 class CampaignController extends Controller {
     private static $maxItemsPerPage = 1000; // Defina o máximo de itens por página
@@ -133,53 +128,58 @@ class CampaignController extends Controller {
         return response()->json('Campaign deleted', 204);
     }
 
+
+
     public function addAgent(Request $request, $campaign_id) {
         $validator = Validator::make($request->all(), [
-            'agent_id' => 'required|integer'
+            'agent_user' => 'required|string' // Ajustado para agent_user
         ]);
-
+    
         if ($validator->fails()) return response()->json($validator->errors(), 400);
-
+    
         $campaign = Campaign::find($campaign_id);
         if (!$campaign) return response()->json(['error' => 'Campaign not found'], 404);
-
-        $agent_id = $request->input('agent_id');
-        $agent = VicidialUser::find($agent_id);
-
+    
+        $agent_user = $request->input('agent_user'); // Utilize agent_user
+    
+        $agent = VicidialUser::where('user', $agent_user)->first(); // Verificação ajustada
+    
         if (!$agent) return response()->json(['error' => 'Agent not found'], 404);
-
+    
         DB::table('vicidial_campaign_agents')->insert([
             'campaign_id' => $campaign_id,
             'user' => $agent->user,
         ]);
-
+    
         return response()->json(['message' => 'Agent added to campaign'], 200);
-    }
+    }    
 
     public function removeAgent(Request $request, $campaign_id) {
         $validator = Validator::make($request->all(), [
-            'agent_id' => 'required|integer'
+            'agent_user' => 'required|string' // Ajustado para agent_user
         ]);
-
+    
         if ($validator->fails()) return response()->json($validator->errors(), 400);
-
+    
         $campaign = Campaign::find($campaign_id);
         if (!$campaign) return response()->json(['error' => 'Campaign not found'], 404);
-
-        $agent_id = $request->input('agent_id');
-        $agent = VicidialUser::find($agent_id);
-
+    
+        $agent_user = $request->input('agent_user'); // Utilize agent_user
+    
+        $agent = VicidialUser::where('user', $agent_user)->first(); // Verificação ajustada
+    
         if (!$agent) return response()->json(['error' => 'Agent not found'], 404);
-
+    
         $result = DB::table('vicidial_campaign_agents')
                     ->where('campaign_id', $campaign_id)
                     ->where('user', $agent->user)
                     ->delete();
-
+    
         if ($result) {
             return response()->json(['message' => 'Agent removed from campaign'], 200);
         } else {
             return response()->json(['error' => 'Failed to remove agent from campaign'], 500);
         }
     }
+    
 }

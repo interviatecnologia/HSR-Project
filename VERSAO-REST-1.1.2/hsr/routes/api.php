@@ -85,7 +85,10 @@ Route::prefix('campaign')->group(function () {
         Route::post('/', 'post');
         Route::get('/{id}', 'get');
         Route::put('/{id}', 'put');
-        Route::delete('/{id}', 'delete');
+        Route::delete('/{id}', 'delete');        
+
+        Route::post('/addAgent/{id}', 'addAgent');   // Adicionar agente à campanha
+        Route::post('/removeAgent/{id}', 'removeAgent'); // Remover agente da campanha
     });
 });
 
