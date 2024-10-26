@@ -42,7 +42,10 @@ if ($function == 'add_lead') {
             // REGISTRO DE LOG
             api_log($link, $api_logging, $api_script, $user, $agent_user, $function, $value, $response['result'], $response['result_reason'], $source, $data);
             exit;
-        } else {
+        } 
+        ##################################################################
+
+        else {
             // VERIFICAR USUÁRIO
             $stmt = "SELECT count(*) from vicidial_users where user='$user' and vdc_agent_api_access='1' and modify_leads IN('1','2','3','4') and user_level > 7 and active='Y';";
             $rslt = mysql_to_mysqli($stmt, $link);
@@ -65,7 +68,11 @@ if ($function == 'add_lead') {
                 // REGISTRO DE LOG
                 api_log($link, $api_logging, $api_script, $user, $agent_user, $function, $value, $response['result'], $response['result_reason'], $source, $data);
                 exit;
-            } else {
+
+                 
+            } 
+            ##################################################################
+            else {
                 // CONTINUAR COM OUTRAS VERIFICAÇÕES E LÓGICA...
                 // Exemplo de verificação de lista permitida
                 if ($api_list_restrict > 0) {
@@ -1205,5 +1212,7 @@ if ($callback == 'Y') {
        'data' => "$phone_number|$list_id|$stmt"  
     ]);  
     api_log($link, $api_logging, $api_script, $user, $agent_user, $function, $value, 'ERROR', "add_lead LEAD HAS NOT BEEN ADDED", $source, "$phone_number|$list_id|$stmt");  
+
 }
 ?>
+
