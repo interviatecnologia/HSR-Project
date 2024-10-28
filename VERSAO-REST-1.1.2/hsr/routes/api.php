@@ -101,9 +101,10 @@ Route::prefix('campaign')->group(function () {
             Route::get('/{id}', 'get');
             Route::put('/{id}', 'put');
             Route::delete('/{id}', 'delete');
-        });
+            Route::post('/createWithExtensionAndCampaign', 'createWithExtensionAndCampaign'); // CRIA AGENTE/RAMAL/VINCULA CAMPANHA
     });
-    
+});
+
     Route::prefix('extensions')->group(function () {
         Route::controller(ExtensionController::class)->group(function () {
             Route::get('/', 'index');
