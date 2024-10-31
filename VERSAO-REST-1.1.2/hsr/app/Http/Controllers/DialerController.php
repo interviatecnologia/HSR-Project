@@ -2,12 +2,14 @@
 
 namespace App\Http\Controllers;
 
+
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Http\Request;
 use App\Models\VicidialLiveAgent;
 use App\Models\VicidialUser;
 use App\Models\Campaign;
 use App\Models\InboundGroups;
+use App\Models\Phone;
 use App\Models\VicidialList;
 use App\Models\VicidialAgentLog;
 use Illuminate\Support\Facades\DB;
@@ -24,6 +26,11 @@ class DialerController extends Controller
         'user_level' => 'required|int|min:1|max:9',
         'full_name' => 'required|string|min:1|max:50',
         'user_group' => 'required|int|min:1|max:20'
+    ];
+
+    // Declaração dos validadores específicos para cada função
+    private static $validatorFieldsLogout = [
+        'user' => 'required|string|min:2|max:20'
     ];
 
     public function store(Request $request) {
@@ -45,6 +52,153 @@ class DialerController extends Controller
         return response()->json('Success', 200);
     }
 
+    public function login(Request $request) {
+        // Validação dos dados de entrada
+        $validator = Validator::make($request->all(), [
+            'user' => 'required|string|min:2',
+            'alt_user' => 'nullable|string',
+        ]);
+        
+        if ($validator->fails()) {
+            return response()->json($validator->errors(), 400);
+        }
+    
+        $agent_user = $request->input('user');
+        $alt_user = $request->input('alt_user');
+    
+        // Defina um valor padrão para server_ip e lead_id
+        $server_ip = $request->input('server_ip') ?? '10.0.0.112'; // Valor padrão para o IP
+        $lead_id = $request->input('lead_id') ?? '0'; // Valor padrão para o lead_id
+    
+        // Verificação se o usuário tem permissão para login
+        if (strlen($agent_user) < 1 && strlen($alt_user) < 2) {
+            return response()->json([
+                'result' => 'ERROR',
+                'result_reason' => 'login not valid'
+            ], 400);
+        }
+    
+        if (strlen($alt_user) > 1) {
+            $user = VicidialUser ::where('custom_three', $alt_user)->first();
+            if ($user) {
+                $agent_user = $user->user;
+            } else {
+                return response()->json([
+                    'result' => 'ERROR',
+                    'result_reason' => 'no user found'
+                ], 404);
+            }
+        }
+    
+        // Verifica se o agente já está logado
+        $agent = VicidialLiveAgent::where('user', $agent_user)->first();
+        if ($agent) {
+            return response()->json([
+                'result' => 'ERROR',
+                'result_reason' => 'agent_user is already logged in'
+            ], 400);
+        } else {
+            // Tenta encontrar a extensão do usuário
+            $userDetails = VicidialUser ::where('user', $agent_user)->first();
+            $extension = null;
+            $campaign_id = null; // Inicializa a variável campaign_id
+    
+            if ($userDetails) {
+                // Se o usuário foi encontrado, tenta pegar a extensão
+                $extension = $userDetails->phone_login;
+            }
+    
+            // Se a extensão não foi encontrada, tenta criar uma nova
+            if (!$extension) {
+                $availablePhone = $this->findAvailableExtension();
+                if ($availablePhone) {
+                    $extension = $availablePhone->dialplan_number; // Ou outro campo que você deseja usar
+                    // Aqui você pode implementar a lógica para associar o ramal ao usuário, se necessário
+                } else {
+                    return response()->json([
+                        'result' => 'ERROR',
+                        'result_reason' => 'no available extension found'
+                    ], 400);
+                }
+            }
+    
+            // Se o agente não estiver logado, cria uma nova entrada
+            $newAgent = VicidialLiveAgent::create([
+                'user' => $agent_user,
+                'status' => 'LOGIN', // Defina o status que você deseja usar para logado
+                'server_ip' => $server_ip, // Usa o valor padrão ou o valor fornecido
+                'lead_id' => $lead_id, // Usa o valor padrão ou o valor fornecido
+                'extension' => $extension, // Usa a extensão encontrada ou criada
+                // Adicione outros campos necessários, como campaign_id, etc., se necessário
+            ]);
+    
+            // Obtenha os valores de status, extension e campaign_id da nova entrada
+            $status = $newAgent->status; // Obtem o status do novo agente
+            $campaign_id = $newAgent->campaign_id; // Supondo que você tenha definido campaign_id durante a criação
+    
+            return response()->json([
+                'result' => 'SUCCESS',
+                'result_reason' => 'login function set',
+                'agent_user' => $agent_user,
+                'extension' => $extension,
+                'status' => $status,
+                'campaign_id' => $campaign_id,
+            ], 200);
+        }
+    }
+    public function logout(Request $request) {
+        // Validação dos dados de entrada
+        $validator = Validator::make($request->all(), [
+            'user' => 'required|string|min:2',
+            'alt_user' => 'nullable|string',
+        ]);
+        
+        if ($validator->fails()) {
+            return response()->json($validator->errors(), 400);
+        }
+    
+        $agent_user = $request->input('user');
+        $alt_user = $request->input('alt_user');
+    
+        // Verificação se o usuário tem permissão para logout
+        if (strlen($agent_user) < 1 && strlen($alt_user) < 2) {
+            return response()->json([
+                'result' => 'ERROR',
+                'result_reason' => 'logout not valid'
+            ], 400);
+        }
+    
+        if (strlen($alt_user) > 1) {
+            $user = VicidialUser ::where('custom_three', $alt_user)->first();
+            if ($user) {
+                $agent_user = $user->user;
+            } else {
+                return response()->json([
+                    'result' => 'ERROR',
+                    'result_reason' => 'no user found'
+                ], 404);
+            }
+        }
+    
+        // Verifica se o agente está logado
+    $agent = VicidialLiveAgent::where('user', $agent_user)->first();
+    if ($agent) {
+        // Remove o registro do agente da tabela vicidial_live_agents
+        $agent->delete();
+
+        return response()->json([
+            'result' => 'SUCCESS',
+            'result_reason' => 'logout function set',
+            'agent_user' => $agent_user
+        ], 200);
+    } else {
+        return response()->json([
+            'result' => 'ERROR',
+            'result_reason' => 'agent_user is not logged in'
+        ], 400);
+    }
+}
+     
     public function pause($user) {
         $agent = VicidialLiveAgent::find($user);
         if (!$agent) return response()->json('Not found', 404);
@@ -99,29 +253,97 @@ class DialerController extends Controller
         ], 200);
     }
 
-    public function status($user) {
-        $agent = VicidialLiveAgent::find($user);
-        if (!$agent) return response()->json('Not found', 404);
-
+    public function status($user)
+{
     // Encontrar o ID correspondente no VicidialUser
     $userInfo = VicidialUser::where('user', $user)->first();
-    if (!$userInfo) return response()->json('User not found in VicidialUser', 404);
-
+    if (!$userInfo) {
         return response()->json([
-            'status' => $agent->status,
-            'user_id' => $userInfo->user_id, // Inclui o ID do usuário do VicidialUser
-            'user' => $userInfo->user, 
-            'full_name' => $userInfo->full_name,
-            'extension' => $agent->extension,
-            'campaign_id' => $agent->campaign_id,
-            'pause_code' => $agent->pause_code
-        ], 200); // Obtém o nome completo do usuário// Utiliza o campo 'user' do VicidialUser
+            'status' => 'DISCONNECTED',
+            'message' => 'User not found in VicidialUser'
+        ], 404);
+    }
 
+    // Encontrar o agente no VicidialLiveAgent
+    $agent = VicidialLiveAgent::where('user', $user)->first();
+    
+    // Definir status inicial como desconectado
+    $agentStatus = 'DISCONNECTED';
+    $campaignId = null;
+    $pauseCode = null;
+    $extension = null;
+    $phoneLogin = $userInfo->phone_login; // Obter phone_login
+
+    if ($agent) {
+        $agentStatus = $agent->status;
+        $campaignId = $agent->campaign_id;
+        $pauseCode = $agent->pause_code;
+        $extension = str_replace('SIP/', '', $agent->extension);
+    } else {
+        // Se o agente não estiver no VicidialLiveAgent, verificar o telefone
+        $extension = str_replace('SIP/', '', $phoneLogin);
     }
-    public function allStatus() {
-        $agents = VicidialLiveAgent::all();
-        return response()->json($agents);
+
+    // Encontrar o ID correspondente no Phone para obter o Sip Status
+    $phoneInfo = Phone::where('dialplan_number', $extension)->first();
+    if (!$phoneInfo) {
+        return response()->json([
+            'status' => $agentStatus,
+            'user_id' => $userInfo->user_id,
+            'user' => $userInfo->user,
+            'full_name' => $userInfo->full_name,
+            'extension' => $extension,
+            'campaign_id' => $campaignId,
+            'pause_code' => $pauseCode,
+            'phone_login' => $phoneLogin,
+            'peer_status' => 'UNKNOWN', // Se o telefone não for encontrado, status SIP é desconhecido
+            'message' => 'Phone not found'
+        ], 404);
     }
+
+    // Determinar o status do SIP
+    $sipStatus = $phoneInfo->peer_status;
+    switch ($sipStatus) {
+        case 'REGISTERED':
+            $status = 'REGISTERED';
+            break;
+        case 'UNREGISTERED':
+            $status = 'UNREGISTERED';
+            break;
+        case 'REACHABLE':
+            $status = 'REACHABLE';
+            break;
+        case 'UNREACHABLE':
+            $status = 'UNREACHABLE';
+            break;
+        case 'LAGGED':
+            $status = 'LAGGED';
+            break;
+        default:
+            $status = 'UNKNOWN';
+            break;
+    }
+
+    return response()->json([
+        'status' => $agentStatus,
+        'user_id' => $userInfo->user_id,
+        'user' => $userInfo->user,
+        'full_name' => $userInfo->full_name,
+        'extension' => $agent ? $agent->extension : $phoneLogin,
+        'campaign_id' => $campaignId,
+        'pause_code' => $pauseCode,
+        'phone_login' => $phoneLogin,
+        'peer_status' => $status, // Inclui o status do SIP
+    ], 200);
+}
+
+
+public function allStatus()
+{
+    $agents = VicidialLiveAgent::all();
+    return response()->json($agents);
+}
+
     
     public function externalDial(Request $request) {
         // Altere o validator para usar 'telefone' ao invés de 'value'
@@ -435,6 +657,72 @@ private function executeHangup($params)
 }
 
 
-}
+public function callAgent(Request $request)
+{
+    //$validator = Validator::make($request->all(), self::$validatorFields);
+    //if ($validator->fails()) {
+    //    return response()->json($validator->errors(), 400);
+    //}
 
-    
+    $agent_user = $request->input('user');
+    $alt_user = $request->input('alt_user');
+
+    if (strlen($agent_user) < 1 && strlen($alt_user) < 2) {
+        return response()->json([
+            'result' => 'ERROR',
+            'result_reason' => 'call_agent not valid'
+        ], 400);
+    }
+
+    if (strlen($alt_user) > 1) {
+        $user = VicidialUser::where('custom_three', $alt_user)->first();
+        if ($user) {
+            $agent_user = $user->user;
+        } else {
+            return response()->json([
+                'result' => 'ERROR',
+                'result_reason' => 'no user found'
+            ], 404);
+        }
+    }
+
+    $agent = VicidialLiveAgent::where('user', $agent_user)->first();
+    if ($agent) {
+        $sessionData = DB::table('vicidial_session_data')->where('user', $agent_user)->first();
+        if ($sessionData && strlen($sessionData->agent_login_call) > 5) {
+            $conf_exten = $agent->conf_exten;
+            $agent_login_call = $sessionData->agent_login_call;
+            $call_agent_conference = preg_replace("/(.+?Exten: )\d{7}(\|Priority.+)/", "$1 $conf_exten$2", $agent_login_call);
+            $call_agent_string = str_replace('|', "','", $call_agent_conference);
+
+            DB::table('vicidial_manager')->insert([
+                'command' => $call_agent_string,
+                'server_ip' => $agent->server_ip,
+                'channel' => $agent->channel,
+                'context' => 'default',
+                'extension' => $conf_exten,
+                'priority' => '1',
+                'callerid' => 'AgentLogin',
+                'status' => 'NEW',
+                'response' => 'NULL',
+                'action' => 'Originate'
+            ]);
+
+            return response()->json([
+                'result' => 'SUCCESS',
+                'result_reason' => 'call_agent function sent'
+            ], 200);
+        } else {
+            return response()->json([
+                'result' => 'ERROR',
+                'result_reason' => 'call_agent error - entry is empty or no session data'
+            ], 400);
+        }
+    } else {
+        return response()->json([
+            'result' => 'ERROR',
+            'result_reason' => 'agent_user is not logged in'
+        ], 400);
+    }
+}
+}
