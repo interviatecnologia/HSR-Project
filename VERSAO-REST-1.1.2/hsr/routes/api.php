@@ -12,8 +12,9 @@ use App\Http\Controllers\BlacklistController;
 use App\Http\Controllers\HolidayScheduleController;
 use App\Http\Controllers\DialerController;
 use App\Http\Controllers\CampaignController;
+use App\Http\Controllers\ReportController;
+use App\Http\Controllers\RecordingController;
 
-use App\Http\Controllers\DialerController2;
 use App\Http\Controllers\Agent\DillerController;
 
 
@@ -56,10 +57,15 @@ Route::middleware('suport.bearer.token')->group(function () {
             Route::put('/pause/{user}', 'pause'); // Pausar Agente:
             Route::put('/unpause/{user}', 'unpause'); // Despausar Agente:
             Route::get('/status/{user}', 'status'); // Verificar Status do Agente:
-            Route::get('/status', 'allStatus'); // Verificar Status de Todos os Agentes: 
-             
+            Route::get('/status', 'allStatus'); // Verificar Status de Todos os Agentes:
+            Route::post('/call_agent', 'callAgent'); // Gera Chamada de conexão do agente
+            Route::post('/login', 'login'); // Logout do Agente
+            Route::post('/logout', 'logout'); // Logout do Agente
+    
         });
+
     });
+
 //});
 
 //Route::middleware('auth.api')->group(function () {
@@ -80,17 +86,17 @@ Route::middleware('suport.bearer.token')->group(function () {
 //Route::middleware('auth.api:8')->group(function () {
     
 Route::prefix('campaign')->group(function () {
-    Route::controller(CampaignController::class)->group(function () {
-        Route::get('/', 'index');
-        Route::post('/', 'post');
-        Route::get('/{id}', 'get');
-        Route::put('/{id}', 'put');
-        Route::delete('/{id}', 'delete');        
+            Route::controller(CampaignController::class)->group(function () {
+            Route::get('/', 'index');
+            Route::post('/', 'post');
+            Route::get('/{id}', 'get');
+            Route::put('/{id}', 'put');
+            Route::delete('/{id}', 'delete');        
 
-        Route::post('/addAgent/{id}', 'addAgent');   // Adicionar agente à campanha
-        Route::post('/removeAgent/{id}', 'removeAgent'); // Remover agente da campanha
+            Route::post('/addAgent/{id}', 'addAgent');   // Adicionar agente à campanha
+            Route::post('/removeAgent/{id}', 'removeAgent'); // Remover agente da campanha
+        });
     });
-});
 
 //Route::middleware('auth.api:8')->group(function () {
     
@@ -102,9 +108,11 @@ Route::prefix('campaign')->group(function () {
             Route::put('/{id}', 'put');
             Route::delete('/{id}', 'delete');
             Route::post('/createWithExtensionAndCampaign', 'createWithExtensionAndCampaign'); // CRIA AGENTE/RAMAL/VINCULA CAMPANHA
-    });
-});
+            
+        });
 
+    });
+    
     Route::prefix('extensions')->group(function () {
         Route::controller(ExtensionController::class)->group(function () {
             Route::get('/', 'index');
@@ -128,13 +136,37 @@ Route::prefix('campaign')->group(function () {
     Route::prefix('leads')->group(function () {
         Route::controller(LeadController::class)->group(function () {
             Route::get('/', 'index');
-            Route::get('/{id}', 'get');
-            Route::post('/', 'post');
-            Route::put('/{id}', 'put');
+            Route::get('/{id}', 'show');
+            Route::post('/addLead', 'addLead'); // CRIA UM LEAD EM UMA LISTA DE CONTATOS
+            Route::put('/{id}', 'update'); // Altere 'put' para 'update'
             Route::delete('/{id}', 'delete');
+            Route::get('/list/search/{listId}', [LeadController::class, 'search']); // Pesquisa por leads em uma lista especifica 
         });
     });
+
+  
+    Route::prefix('reports')->group(function () {
+        Route::get('/call-logs', [ReportController::class, 'getCallLogs']);
+        Route::get('/phones', [ReportController::class, 'getPhones']);
+        Route::get('/user', [ReportController::class, 'getusers']);
+        Route::get('/agent', [ReportController::class, 'getagent']);
+        Route::get('/lead', [ReportController::class, 'getlead']);
+        Route::get('/campaign', [ReportController::class, 'getcampaign']);
+    // Add more routes for other report categories as needed
+        Route::get('/report-category', [ReportController::class, 'getReportCategory'
+
+        ]);
+    });
     
+    Route::prefix('recordings')->group(function () {
+        Route::get('/', [RecordingController::class, 'listRecordings']); // Listar gravações
+        Route::get('/download/{filename}', [RecordingController::class, 'downloadRecording']); // Baixar gravação
+        Route::get('/play/{filename}', [RecordingController::class, 'playRecording']); // Reproduzir gravação
+        Route::get('/search', [RecordingController::class, 'searchRecordings' // Buscar gravações com filtros
+        ]); 
+    });
+    
+
     Route::prefix('holidaySchedules')->group(function () {
         Route::controller(HolidayScheduleController::class)->group(function () {
             Route::get('/', 'index');
@@ -157,8 +189,9 @@ Route::prefix('campaign')->group(function () {
 
     Route::middleware('auth:sanctum')->get('/token-test', function (Request $request) {
         return response()->json(['message' => 'Token is valid!'], 200);
+
+        
     });
     
 //});
-
 
