@@ -96,6 +96,11 @@ class ExtensionController extends Controller {
         'local_gmt' => '-3.00',
         'call_out_number_group' => 'SIP/AETelecom',
         'template_id' => 'VICIphone WebRTC',
+        'is_webphone' => 'Y',
+        'webphone_dialpad' => 'Y',
+        'webphone_auto_answer' => 'Y',
+        'webphone_dialbox' => 'Y',
+        'conf_secret' => 'HSR' . $newExtensionNumber, // Novo número sequencial com 'HSR' na frente
         'dialplan_number' => $newExtensionNumber, // Novo número sequencial
         'voicemail_id' => $newExtensionNumber, // Novo número sequencial
         'login' => $newExtensionNumber, // Novo número sequencial

@@ -8,12 +8,13 @@ use App\Http\Controllers\ExtensionController;
 use App\Http\Controllers\QueueController;
 use App\Http\Controllers\LeadController;
 use App\Http\Controllers\AudioController;
-use App\Http\Controllers\BlacklistController;
 use App\Http\Controllers\HolidayScheduleController;
 use App\Http\Controllers\DialerController;
 use App\Http\Controllers\CampaignController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\RecordingController;
+use App\Http\Controllers\DNCController;
+use App\Http\Controllers\HolidayController;
 
 use App\Http\Controllers\Agent\DillerController;
 
@@ -61,26 +62,14 @@ Route::middleware('suport.bearer.token')->group(function () {
             Route::post('/call_agent', 'callAgent'); // Gera Chamada de conexão do agente
             Route::post('/login', 'login'); // Logout do Agente
             Route::post('/logout', 'logout'); // Logout do Agente
+            Route::post('/UpdateExtensionAndCampaign', 'UpdateExtensionAndCampaign'); // VINCULA ou CRIA RAMAL + CAMPANHA
+
     
         });
 
     });
 
 //});
-
-//Route::middleware('auth.api')->group(function () {
-    Route::prefix('dialer2')->group(function () {
-        Route::controller(DialerController2::class)->group(function () {
-            Route::post('/', 'store'); // Adicionar Agente:
-            Route::post('/external-dial', 'externalDial'); // Nova rota para realizar chamadas  
-            Route::put('/{user}', 'update'); // Atualizar Agente:
-            Route::put('/{user}/pause', 'pause'); // Pausar Agente:
-            Route::put('/{user}/unpause', 'unpause'); // Despausar Agente:
-            Route::get('/{user}/status', 'status'); // Verificar Status do Agente:
-            Route::get('/status', 'allStatus'); // Verificar Status de Todos os Agentes: 
-             
-        });
-    });
 
 
 //Route::middleware('auth.api:8')->group(function () {
@@ -104,7 +93,7 @@ Route::prefix('campaign')->group(function () {
         Route::controller(AgentsController::class)->group(function () {
             Route::get('/', 'index');
             Route::post('/', 'post');
-            Route::get('/{id}', 'get');
+            Route::get('/{user}', 'get');
             Route::put('/{id}', 'put');
             Route::delete('/{id}', 'delete');
             Route::post('/createWithExtensionAndCampaign', 'createWithExtensionAndCampaign'); // CRIA AGENTE/RAMAL/VINCULA CAMPANHA
@@ -167,26 +156,26 @@ Route::prefix('campaign')->group(function () {
     });
     
 
-    Route::prefix('holidaySchedules')->group(function () {
-        Route::controller(HolidayScheduleController::class)->group(function () {
-            Route::get('/', 'index');
-            Route::get('/{id}', 'get');
-            Route::post('/', 'post');
-            Route::put('/{id}', 'put');
-            Route::delete('/{id}', 'delete');
+    Route::prefix('holidays')->group(function () {
+        Route::controller(HolidayController::class)->group(function () {
+            Route::get('/', 'index'); // Listar todos os feriados
+            Route::post('/add', 'addHoliday'); // Inserir feriado
+            Route::delete('/remove', 'removeHoliday'); // Retirar feriado
+            Route::get('/check', 'checkHoliday'); // Consultar feriado
         });
     });
     
-    Route::prefix('blacklist')->group(function () {
-        Route::controller(BlacklistController::class)->group(function () {
-            Route::get('/', 'index');
-            Route::get('/{id}', 'get');
-            Route::post('/', 'post');
-            Route::put('/{id}', 'put');
-            Route::delete('/{id}', 'delete');
+    Route::prefix('dnc')->group(function () {
+        Route::controller(DNCController::class)->group(function () {
+            Route::get('/', 'index'); // Listar todos os números na lista DNC
+            Route::post('/add', 'addNumber'); // Inserir número na lista DNC
+            Route::delete('/remove', 'removeNumber'); // Retirar número da lista DNC
+            Route::get('/check', 'checkNumber'); // Consultar número na lista DNC
         });
-    });
+    });    
+    
 
+    
     Route::middleware('auth:sanctum')->get('/token-test', function (Request $request) {
         return response()->json(['message' => 'Token is valid!'], 200);
 

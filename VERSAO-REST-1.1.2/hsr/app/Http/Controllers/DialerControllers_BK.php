@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Http\Request;
 use App\Models\VicidialLiveAgent;
@@ -13,13 +12,10 @@ use App\Models\Phone;
 use App\Models\VicidialList;
 use App\Models\VicidialAgentLog;
 use Illuminate\Support\Facades\DB;
-use App\Models\VicidailUser;
 use Illuminate\Support\Facades\Log;
 
 
-
-class DialerController extends Controller
-{
+class DialerController extends Controller {
     private static $validatorFields = [
         'user' => 'required|string|min:2|max:20',
         'pass' => 'required|string|min:1|max:20',
@@ -297,9 +293,12 @@ class DialerController extends Controller
             'user' => $userInfo->user,
             'full_name' => $userInfo->full_name,
             'extension' => $userInfo->$extension,
-            'campaign_id' => $campaignId,
-            'pause_code' => $pauseCode,
+            'conf_secret' => $phoneInfo->conf_secret,
             'phone_login' => $phoneLogin,
+            'phone_pass' => $userInfo->phone_pass,
+            'conf_exten' => $agent->conf_exten,
+            'campaign_id' => $campaignId,
+            'pause_code' => $pauseCode,            
             'peer_status' => 'UNKNOWN', // Se o telefone não for encontrado, status SIP é desconhecido
             'message' => 'Phone not found'
         ], 404);
@@ -334,9 +333,12 @@ class DialerController extends Controller
         'user' => $userInfo->user,
         'full_name' => $userInfo->full_name,
         'extension' => $agent && $agent->extension ? $agent->extension : $phoneLogin,
-        'campaign_id' => $campaignId,
-        'pause_code' => $pauseCode,
+        'conf_secret' => $phoneInfo->conf_secret,
         'phone_login' => $phoneLogin,
+        'phone_pass' => $userInfo->phone_pass,
+        'conf_exten' => $agent && $agent->conf_exten ? $agent->conf_exten : $phoneInfo->conf_exten,
+        'campaign_id' => $campaignId,
+        'pause_code' => $pauseCode,        
         'peer_status' => $status, // Inclui o status do SIP
     ], 200);
 }
@@ -348,161 +350,186 @@ public function allStatus()
     return response()->json($agents);
 }
 
+
+use Illuminate\Support\Facades\DB;
+
+public function externalDial(Request $request) {
+    Log::info('externalDial function called');
     
-    public function externalDial(Request $request) {
-        // Altere o validator para usar 'telefone' ao invés de 'value'
-        $validator = Validator::make($request->all(), [
-            'telefone' => 'required|string|min:2',
-            'agent_user' => 'required|string|min:2',
-            'lead_id' => 'nullable|integer',
-            // Remova os campos que terão valores padrão
-            //'alt_user' => 'nullable|string',
-            //'search' => 'required|string|min:2',
-            //'preview' => 'required|string|min:2',
-            //'focus' => 'required|string|min:2',
-            //'phone_code' => 'nullable|string',            
-            //'dial_ingroup' => 'nullable|string',
-            //'group_alias' => 'nullable|string',
-            //'outbound_cid' => 'nullable|string',
-        ]);
-    
-        if ($validator->fails()) {
-            return response()->json(['error' => 'Invalid request'], 400);
+    $validator = Validator::make($request->all(), [
+        'telefone' => 'required|string|min:2',
+        'agent_user' => 'required|string|min:2',
+        'lead_id' => 'nullable|integer',
+    ]);
+
+    if ($validator->fails()) {
+        Log::error('Validation failed', ['errors' => $validator->errors()]);
+        return response()->json(['error' => 'Invalid request'], 400);
+    }
+
+    $value = $request->input('telefone');
+    $agent_user = $request->input('agent_user');
+    Log::info('Parameters received', ['telefone' => $value, 'agent_user' => $agent_user]);
+
+    $alt_user = "";
+    $search = "YES";
+    $preview = "NO";
+    $focus = "YES";
+    $phone_code = "55";
+    $dial_ingroup = 'HSRTECH';
+    $group_alias = 'HSRTECH';
+    $outbound_cid = $request->input('outbound_cid') ?? '';
+    $lead_id = $request->input('lead_id') ?? null;
+
+    $value = ($value == 'MANUALNEXT') ? preg_replace("/[^0-9a-zA-Z]/", "", $value) : preg_replace("/[^0-9]/", "", $value);
+
+    if ((strlen($value) < 2 && strlen($lead_id) < 1) || (strlen($agent_user) < 2 && strlen($alt_user) < 2) || strlen($search) < 2 || strlen($preview) < 2 || strlen($focus) < 2) {
+        Log::error('Invalid external dial parameters');
+        return response()->json(['error' => 'Invalid external dial parameters'], 400);
+    }
+
+    $liveAgent = VicidialLiveAgent::where('user', $agent_user)->first();
+    if (!$liveAgent) {
+        Log::error('Agent user is not logged in', ['agent_user' => $agent_user]);
+        return response()->json(['error' => 'Agent user is not logged in'], 404);
+    }
+
+    Log::info('Agent found', ['liveAgent' => $liveAgent]);
+
+    // Verifique se o agente está em conferência e, caso contrário, atribua uma
+    if (!$liveAgent->conf_exten) {
+        Log::info('Agent not in conference, assigning conference');
+        $conferenceId = $this->assignConference($liveAgent);
+        if (!$conferenceId) {
+            Log::error('Failed to assign conference');
+            return response()->json(['error' => 'Failed to assign conference'], 500);
         }
-    
-        // Use telefone na entrada e converta para value internamente
-        $value = $request->input('telefone');
-        $agent_user = $request->input('agent_user');
-        
-        // Defina valores padrão
-        $alt_user = "";
-        $search = "YES";
-        $preview = "NO";
-        $focus = "YES";
-        $phone_code = "55";
-        $dial_ingroup = 'HSRTECH';
-        $group_alias = 'HSRTECH';
-        $outbound_cid = $request->input('outbound_cid') ?? '';
-        $lead_id = $request->input('lead_id') ?? null;        
-    
-    
-        // Sanitização do value
-        $value = ($value == 'MANUALNEXT') ? preg_replace("/[^0-9a-zA-Z]/", "", $value) : preg_replace("/[^0-9]/", "", $value);
-    
-        if ((strlen($value) < 2 && strlen($lead_id) < 1) || (strlen($agent_user) < 2 && strlen($alt_user) < 2) || strlen($search) < 2 || strlen($preview) < 2 || strlen($focus) < 2) {
-            return response()->json(['error' => 'Invalid external dial parameters'], 400);
-        }
-    
-        // Verificar se o agente está logado
-        $liveAgent = VicidialLiveAgent::where('user', $agent_user)->first();
-        if (!$liveAgent) {
-            return response()->json(['error' => 'Agent user is not logged in'], 404);
-        }
-    
-        // Recuperar o ID da conferência (conf_exten)
-        $conference_id = $liveAgent->conf_exten;
-        if (!$conference_id) {
-            return response()->json(['error' => 'No conference ID found for agent'], 404);
-        }
-    
-        // Verificar a campanha do agente
-        $vac_campaign_id = $liveAgent->campaign_id;
-        $campaign = Campaign::where('campaign_id', $vac_campaign_id)->first();
-        $api_manual_dial = $campaign->api_manual_dial ?? '';
-        $agent_ready = ($api_manual_dial == 'STANDARD') ? VicidialLiveAgent::where('user', $agent_user)->where('status', 'PAUSED')->where('lead_id', '<', 1)->count() : 1;
-    
-        if (strlen($dial_ingroup) > 0) {
-            $dialIngroupCount = InboundGroups::where('group_id', $dial_ingroup)->count();
-            if ($dialIngroupCount < 1) {
-                return response()->json(['notice' => 'Defined dial_ingroup not found'], 400);
-            }
-        }
-    
-        // Função de discagem
-        $result = $this->makeCall([
-            'value' => $value,
-            'agent_user' => $agent_user,
-            'phone_code' => $phone_code,
-            'lead_id' => $lead_id,
-            'search' => $search,
-            'preview' => $preview,
-            'focus' => $focus,
-            'dial_ingroup' => $dial_ingroup,
-            'group_alias' => $group_alias,
-            'outbound_cid' => $outbound_cid,
-            'conference_id' => $conference_id // Adicionar conference_id aos parâmetros
-        ]);
-    
-        if ($result['status'] == 'SUCCESS') {
-            return response()->json(['message' => 'Call initiated'], 200);
-        } else {
-            return response()->json(['message' => 'Call initiated'], 200);
-        //    return response()->json(['error' => 'Failed to initiate call', 'reason' => $result['reason']], 500);
+        $liveAgent->conf_exten = $conferenceId;
+        $liveAgent->save();
+    } else {
+        $conferenceId = $liveAgent->conf_exten;
+    }
+
+    Log::info('Conference assigned', ['conferenceId' => $conferenceId]);
+
+    $vac_campaign_id = $liveAgent->campaign_id;
+    $campaign = Campaign::where('campaign_id', $vac_campaign_id)->first();
+    $api_manual_dial = $campaign->api_manual_dial ?? '';
+    $agent_ready = ($api_manual_dial == 'STANDARD') ? VicidialLiveAgent::where('user', $agent_user)->where('status', 'PAUSED')->where('lead_id', '<', 1)->count() : 1;
+
+    if (strlen($dial_ingroup) > 0) {
+        $dialIngroupCount = InboundGroups::where('group_id', $dial_ingroup)->count();
+        if ($dialIngroupCount < 1) {
+            return response()->json(['notice' => 'Defined dial_ingroup not found'], 400);
         }
     }
+
+    $result = $this->makeCall([
+        'value' => $value,
+        'agent_user' => $agent_user,
+        'phone_code' => $phone_code,
+        'lead_id' => $lead_id,
+        'search' => $search,
+        'preview' => $preview,
+        'focus' => $focus,
+        'dial_ingroup' => $dial_ingroup,
+        'group_alias' => $group_alias,
+        'outbound_cid' => $outbound_cid,
+        'conference_id' => $conferenceId // Adicionar conference_id aos parâmetros
+    ]);
+
+    if ($result['status'] == 'SUCCESS') {
+        Log::info('Call initiated successfully');
+        return response()->json(['message' => 'Call initiated'], 200);
+    } else {
+        Log::error('Failed to initiate call', ['reason' => $result['reason']]);
+        return response()->json(['error' => 'Failed to initiate call', 'reason' => $result['reason']], 500);
+    }
+}
+
+private function assignConference($liveAgent) {
+    Log::info('Assigning conference');
     
-    private function makeCall($params) {
-        // Conecte-se ao Asterisk Manager Interface (AMI)
-        $socket = fsockopen('127.0.0.1', 5038, $errno, $errstr, 30);
-        if (!$socket) {
-            return ['status' => 'ERROR', 'reason' => "Could not connect to AMI: $errstr ($errno)"];
-        }
+    $conference = DB::table('vicidial_conferences')
+        ->where('server_ip', $liveAgent->server_ip)
+        ->whereNull('extension')
+        ->first();
+
+    if ($conference) {
+        DB::table('vicidial_conferences')
+            ->where('conf_exten', $conference->conf_exten)
+            ->update(['extension' => $liveAgent->extension]);
+
+        Log::info('Conference assigned', ['conferenceId' => $conference->conf_exten]);
+        return $conference->conf_exten;
+    }
+
+    Log::error('No available conference found');
+    return false;
+}
+
+private function makeCall($params) {
+    Log::info('Making call', ['params' => $params]);
     
-        // Autenticação AMI
-        fputs($socket, "Action: Login\r\n");
-        fputs($socket, "Username: cron\r\n");
-        fputs($socket, "Secret: 1234\r\n");
-        fputs($socket, "Events: on\r\n\r\n");
-    
-        $response = $this->getAmiResponse($socket);
-        if (strpos($response, 'Success') === false) {
-            return ['status' => 'ERROR', 'reason' => 'AMI login failed'];
-        }
-    
-        // Comando Originate
-        fputs($socket, "Action: Originate\r\n");
-        fputs($socket, "Channel: Local/{$params['value']}@default\r\n");
-        fputs($socket, "Context: default\r\n");
-        fputs($socket, "Exten: {$params['value']}\r\n");
-        fputs($socket, "Priority: 1\r\n");
-        fputs($socket, "CallerID: {$params['agent_user']}\r\n");
-        fputs($socket, "Variable: AGENT_USER={$params['agent_user']}\r\n");
-        fputs($socket, "Variable: PHONE_CODE={$params['phone_code']}\r\n");
-        fputs($socket, "Variable: LEAD_ID={$params['lead_id']}\r\n");
-        fputs($socket, "Variable: SEARCH={$params['search']}\r\n");
-        fputs($socket, "Variable: PREVIEW={$params['preview']}\r\n");
-        fputs($socket, "Variable: FOCUS={$params['focus']}\r\n");
-        fputs($socket, "Variable: DIAL_INGROUP={$params['dial_ingroup']}\r\n");
-        fputs($socket, "Variable: GROUP_ALIAS={$params['group_alias']}\r\n");
-        fputs($socket, "Variable: OUTBOUND_CID={$params['outbound_cid']}\r\n");
-        fputs($socket, "Application: MeetMe\r\n");
-        fputs($socket, "Data: {$params['conference_id']},F\r\n\r\n");
-    
-    
-        $response = $this->getAmiResponse($socket);
-    
-        // Desconectar do AMI
-        fputs($socket, "Action: Logoff\r\n\r\n");
-        fclose($socket);
-    
-        if (strpos($response, 'Success') !== false) {
+    $socket = fsockopen('127.0.0.1', 5038, $errno, $errstr, 30);
+    if (!$socket) {
+        Log::error('Could not connect to AMI', ['error' => $errstr, 'errno' => $errno]);
+        return ['status' => 'ERROR', 'reason' => "Could not connect to AMI: $errstr ($errno)"];
+    }
+
+    fputs($socket, "Action: Login\r\n");
+    fputs($socket, "Username: cron\r\n");
+    fputs($socket, "Secret: 1234\r\n");
+    fputs($socket, "Events: on\r\n\r\n");
+
+    $response = $this->getAmiResponse($socket);
+    if (strpos($response, 'Success') === false) {
+        Log::error('AMI login failed', ['response' => $response]);
+        return ['status' => 'ERROR', 'reason' => 'AMI login failed'];
+    }
+
+    fputs($socket, "Action: Originate\r\n");
+    fputs($socket, "Channel: Local/{$params['value']}@default\r\n");
+    fputs($socket, "Context: default\r\n");
+    fputs($socket, "Exten: {$params['value']}\r\n");
+    fputs($socket, "Priority: 1\r\n");
+    fputs($socket, "CallerID: {$params['agent_user']}\r\n");
+    fputs($socket, "Variable: AGENT_USER={$params['agent_user']}\r\n");
+    fputs($socket, "Variable: PHONE_CODE={$params['phone_code']}\r\n");
+    fputs($socket, "Variable: LEAD_ID={$params['lead_id']}\r\n");
+    fputs($socket, "Variable: SEARCH={$params['search']}\r\n");
+    fputs($socket, "Variable: PREVIEW={$params['preview']}\r\n");
+    fputs($socket, "Variable: FOCUS={$params['focus']}\r\n");
+    fputs($socket, "Variable: DIAL_INGROUP={$params['dial_ingroup']}\r\n");
+    fputs($socket, "Variable: GROUP_ALIAS={$params['group_alias']}\r\n");
+    fputs($socket, "Variable: OUTBOUND_CID={$params['outbound_cid']}\r\n");
+    fputs($socket, "Application: MeetMe\r\n");
+    fputs($socket, "Data: {$params['conference_id']},F\r\n\r\n");
+
+    $response = $this->getAmiResponse($socket);
+
+    fputs($socket, "Action: Logoff\r\n\r\n");
+    fclose($socket);
+
+    if (strpos($response, 'Success') !== false) {
+        Log::info('Call made successfully');
         return ['status' => 'SUCCESS'];
-        } else {
+    } else {
+        Log::error('Call failed', ['response' => $response]);
         return ['status' => 'ERROR', 'reason' => $response];
-        }
     }
-    
-    private function getAmiResponse($socket) {
+}
+private function getAmiResponse($socket) {
     $response = '';
     while ($line = fgets($socket, 4096)) {
         $response .= $line;
         if (trim($line) == '') {
-        break;
-     }
-     }
-     return $response;
-
+            break;
+        }
+    }
+    return $response;
 }
+
 
 public function hangupCall(Request $request)
 {
@@ -666,7 +693,7 @@ public function callAgent(Request $request)
     // Validar os parâmetros de entrada
     $validator = Validator::make($request->all(), [
         'user' => 'required|string|min:1|max:50',
-        'alt_user' => 'nullable|string|min:1|max:50'
+       'alt_user' => 'nullable|string|min:1|max:50'
     ]);
 
     if ($validator->fails()) {
@@ -886,24 +913,30 @@ private function findAvailableExtension()
         }
     
         // Adicionar valores padrão
-        $defaultValues = [
-            'source' => 'hsr',
-            'server_ip' => '10.0.0.112',
-            'protocol' => 'SIP',
-            'phone_type' => 'SIP',
-            'local_gmt' => '-3.00',
-            'call_out_number_group' => 'SIP/AETelecom',
-            'template_id' => 'VICIphone WebRTC',
-            'dialplan_number' => $newExtensionNumber, // Novo número sequencial
-            'voicemail_id' => $newExtensionNumber, // Novo número sequencial
-            'login' => (string)$newExtensionNumber, // Novo número sequencial
-            'pass' => (string)$newExtensionNumber, // Novo número sequencial
-            'login_user' => (string)$newExtensionNumber, // Novo número sequencial
-            'login_pass' => (string)$newExtensionNumber, // Novo número sequencial
-            'outbound_cid' => $newExtensionNumber, // Novo número sequencial
-            'extension' => (string)$newExtensionNumber, // Campo extension
-            'fullname' => 'User ' . $newExtensionNumber // Campo fullname
-        ];
+        // Adicionar valores padrão 
+    $defaultValues = [
+        'source' => 'hsr',
+        'server_ip' => '10.0.0.112',
+        'protocolo' => 'SIP',
+        'phone_type' => "SIP",
+        'local_gmt' => '-3.00',
+        'call_out_number_group' => 'SIP/AETelecom',
+        'template_id' => 'VICIphone WebRTC',
+        'is_webphone' => 'Y',
+        'webphone_dialpad' => 'Y',
+        'webphone_auto_answer' => 'Y',
+        'webphone_dialbox' => 'Y',
+        'conf_secret' => 'HSR' . $newExtensionNumber, // Novo número sequencial com 'HSR' na frente
+        'dialplan_number' => $newExtensionNumber, // Novo número sequencial
+        'voicemail_id' => $newExtensionNumber, // Novo número sequencial
+        'login' => $newExtensionNumber, // Novo número sequencial
+        'pass' => $newExtensionNumber, // Novo número sequencial
+        'login_user' => $newExtensionNumber, // Novo número sequencial
+        'login_pass' => $newExtensionNumber, // Novo número sequencial
+        'outbound_cid' => $newExtensionNumber, // Novo número sequencial
+        'extension' => (string)$newExtensionNumber, // Campo extension
+        'fullname' => 'User   ' . $newExtensionNumber // Campo fullname
+    ];
     
         // Mesclar dados da extensão padrão com os valores padrão
         $newExtensionData = array_merge($defaultExtension->toArray(), $defaultValues);

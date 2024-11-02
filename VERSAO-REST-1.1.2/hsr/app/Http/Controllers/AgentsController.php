@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use App\Models\VicidialUser;
 use App\Models\Phone;
 use App\Models\Campaign;
+use App\Models\VicidialCampaignAgents;
 use Illuminate\Support\Facades\DB; 
 
 class AgentsController extends Controller {
@@ -70,8 +71,8 @@ class AgentsController extends Controller {
         return response()->json($user, 201);
     }
 
-    public function get(string $id) {
-        $user = VicidialUser::find($id);
+    public function get(string $user) {
+        $user = VicidialUser::find($user);
         if (!$user) return response()->json('Not found', 404);
         return response()->json($user);
     }
@@ -94,75 +95,120 @@ class AgentsController extends Controller {
 
 
     public function createWithExtensionAndCampaign(Request $request) {
-        $validator = Validator::make($request->all(), self::$validatorFields);
+        $validator = Validator::make($request->all(), [ 
+            'user' => 'required|string|min:2|max:20', 
+            'campaign_name' => 'required|string|min:1|max:50' 
+        ]);
+        
         if ($validator->fails()) return response()->json($validator->errors(), 400);
     
         DB::beginTransaction();
     
         try {
-            // Garantir que o user seja único
             $baseUser = $request->input('user');
-            $user = $baseUser;
-            $suffix = 1;
+            $campaign_name = $request->input('campaign_name');
+            $user = VicidialUser::where('user', $baseUser)->first();
     
-            while (VicidialUser::where('user', $user)->exists()) {
-                $user = $baseUser . $suffix;
-                $suffix++;
+            if ($user) {
+                // Se o agente já existe, verificar se há um ramal vinculado usando a coluna 'login'
+                $phone = Phone::where('login', $user->user)->first();
+                if (!$phone) {
+                    // Se não há ramal vinculado, encontrar um ramal disponível ou criar um novo
+                    $phone = $this->findAvailableExtension();
+                    if (!$phone) {
+                        $phone = $this->createNewExtension();
+                    }
+                    // Transferir o ramal para o agente existente
+                    $this->transferExtension($phone, $user);
+                }
+            } else {
+                // Garantir que o user seja único
+                $user = $baseUser;
+                $suffix = 1;
+    
+                while (VicidialUser::where('user', $user)->exists()) {
+                    $user = $baseUser . $suffix;
+                    $suffix++;
+                }
+    
+                $request->merge(['user' => $user]);
+    
+                // Criação do agente com valores padrão
+                $userData = [
+                    'user' => $user,
+                    'pass' => $user,
+                    'user_level' => 1,
+                    'full_name' => $user,
+                    'user_group' => 1
+                ];
+                $user = VicidialUser::create($userData);
+
+                // Encontrar um ramal disponível ou criar um novo
+                $phone = $this->findAvailableExtension();
+
+                if (!$phone) {
+                    $phone = $this->createNewExtension();
+                }
+
+                // Transferir o ramal para o novo agente
+                $this->transferExtension($phone, $user);
             }
-    
-            $request->merge(['user' => $user]);
-    
-            // Criação do agente
-            $userData = $request->only(array_keys(self::$validatorFields));
-            $user = VicidialUser::create($userData);
-    
-            // Encontrar um ramal disponível
-            $phone = $this->findAvailableExtension();
-    
-            if (!$phone) {
-                throw new \Exception('No available extension found');
-            }
-    
-            // Transferir o ramal para o novo agente
-            $this->transferExtension($phone, $user);
-    
-            // Vinculação do agente à campanha
-            $campaign_id = $request->input('campaign_id');
-            $campaign = Campaign::find($campaign_id);
-    
+
+            // Atualizar a tabela vicidial_users com phone_login e phone_pass
+                $user->update([
+                'phone_login' => $phone->dialplan_number,
+                'phone_pass' => $phone->pass
+            ]);
+
+
+            // Verificar se o agente já está vinculado à campanha
+            $campaign = Campaign::where('campaign_name', $campaign_name)->first();
+
             if (!$campaign) {
                 throw new \Exception('Campaign not found');
             }
-    
-            DB::table('vicidial_campaign_agents')->insert([
-                'campaign_id' => $campaign_id,
-                'user' => $user->user,
-            ]);
-    
+
+            $existingAssociation = DB::table('vicidial_campaign_agents')
+                ->where('campaign_id', $campaign->campaign_id)
+                ->where('user', $user->user)
+                ->first();
+
+            if (!$existingAssociation) {
+                DB::table('vicidial_campaign_agents')->insert([
+                    'campaign_id' => $campaign->campaign_id,
+                    'user' => $user->user,
+                ]);
+            }
+
             DB::commit();
-    
-            return response()->json([
-                'user' => $user,
-                'extension' => $phone
-            ], 201);
+
+            // Saída filtrada
+            $filteredResponse = [
+                'user' => $user->user,
+                'pass' => $user->pass,
+                'full_name' => $user->full_name,
+                'user_level' => 'Agente - ' . $user->user_level,
+                'campaign' => $campaign->campaign_name,
+                'extension' => $phone->dialplan_number
+            ];
+
+            return response()->json($filteredResponse, 201);
         } catch (\Exception $e) {
             DB::rollBack();
             return response()->json(['error' => $e->getMessage()], 500);
         }
     }
-    
-    
-    
-    private function findAvailableExtension() {
+
+    private function findAvailableExtension()
+    {
         // Procurar um ramal que atenda aos parâmetros específicos
         $phone = Phone::where('dialplan_number', '>', '8300')
-                      //->where('call_out_number_group', 'SIP/AETelecom')
-                      //->where('template_id', 'VICIphone')
                       ->where(function ($query) {
                           $query->where('peer_status', 'UNREGISTERED')
                                 ->orWhere('peer_status', 'UNKNOWN'); // Adiciona a condição UNKNOWN
                       })
                       ->where('active', 'Y') // Verifica se o ramal está ativo
+                      ->whereNull('login') // Verifica se o ramal não está associado a nenhum usuário
                       ->first();
     
         if ($phone) {
@@ -173,16 +219,65 @@ class AgentsController extends Controller {
         // Se não encontrou, retorna null
         return null;
     }
+
+    private function createNewExtension() {
+        // ID da extensão padrão
+        $defaultExtensionId = '1000'; // Substitua pelo ID real da extensão padrão
     
+        // Copiar parâmetros da extensão padrão
+        $defaultExtension = Phone::where('dialplan_number', $defaultExtensionId)->first();
     
+        if (!$defaultExtension) {
+            throw new \Exception('Default extension not found');
+        }
     
-    private function transferExtension($phone, $newUser) {
+        // Obter o último número de extensão usado
+        $lastExtension = Phone::orderBy('dialplan_number', 'desc')->first();
+        $newExtensionNumber = $lastExtension ? $lastExtension->dialplan_number + 1 : 8301;
+    
+        // Verificar se o novo número de extensão já existe e incrementar se necessário
+        while (Phone::where('dialplan_number', $newExtensionNumber)->exists()) {
+            $newExtensionNumber++;
+        }
+    
+        // Adicionar valores padrão
+        $defaultValues = [
+            'source' => 'hsr',
+            'server_ip' => '10.0.0.112',
+            'protocol' => 'SIP',
+            'phone_type' => 'SIP',
+            'local_gmt' => '-3.00',
+            'call_out_number_group' => 'SIP/AETelecom',
+            'template_id' => 'VICIphone WebRTC',
+            'dialplan_number' => $newExtensionNumber, // Novo número sequencial
+            'voicemail_id' => $newExtensionNumber, // Novo número sequencial
+            'login' => (string)$newExtensionNumber, // Novo número sequencial
+            'pass' => (string)$newExtensionNumber, // Novo número sequencial
+            'login_user' => (string)$newExtensionNumber, // Novo número sequencial
+            'login_pass' => (string)$newExtensionNumber, // Novo número sequencial
+            'outbound_cid' => $newExtensionNumber, // Novo número sequencial
+            'extension' => (string)$newExtensionNumber, // Campo extension
+            'fullname' => 'User ' . $newExtensionNumber // Campo fullname
+        ];
+    
+        // Mesclar dados da extensão padrão com os valores padrão
+        $newExtensionData = array_merge($defaultExtension->toArray(), $defaultValues);
+    
+        // Criar a nova extensão
+        try {
+            $phone = Phone::create($newExtensionData);
+            return $phone;
+        } catch (\Exception $e) {
+            throw new \Exception('Failed to create new extension: ' . $e->getMessage());
+        }
+    }    
+        private function transferExtension($phone, $newUser)
+    {
         // Atualiza o ramal para associá-lo ao novo agente
         $phone->update([
-            'assigned_user' => $newUser->user // Use uma coluna existente ou crie uma nova coluna como 'assigned_user'
+            'login' => $newUser->user // Use a coluna 'login' para a associação
         ]);
     }
-    
     
     
 }
