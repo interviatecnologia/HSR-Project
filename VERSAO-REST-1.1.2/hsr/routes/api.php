@@ -51,18 +51,18 @@ Route::middleware('suport.bearer.token')->group(function () {
 //Route::middleware('auth.api')->group(function () {
     Route::prefix('dialer')->group(function () {
         Route::controller(DialerController::class)->group(function () {
-            Route::post('/', 'store'); // Adicionar Agente:
-            Route::post('/external-dial', 'externalDial'); // Nova rota para realizar chamadas
-            Route::post('/hangup-call', 'hangupCall'); // Nova rota para hangup de chamadas  
-            Route::put('/{user}', 'update'); // Atualizar Agente:
-            Route::put('/pause/{user}', 'pause'); // Pausar Agente:
-            Route::put('/unpause/{user}', 'unpause'); // Despausar Agente:
             Route::get('/status/{user}', 'status'); // Verificar Status do Agente:
             Route::get('/status', 'allStatus'); // Verificar Status de Todos os Agentes:
-            Route::post('/call_agent', 'callAgent'); // Gera Chamada de conexão do agente
+            Route::post('/', 'store'); // Adicionar Agente:
+            Route::post('/connectAgentToConference', 'connectAgentToConference'); // Nova rota para realizar chamadas com conferencia
+            Route::post('/external-dial', 'externalDial'); // Nova rota para realizar chamadas
+            Route::post('/hangup-call', 'hangupCall'); // Nova rota para hangup de chamadas  
+            Route::put('/unpause/{user}', 'unpause'); // Despausar Agente            
             Route::post('/login', 'login'); // Logout do Agente
             Route::post('/logout', 'logout'); // Logout do Agente
             Route::post('/UpdateExtensionAndCampaign', 'UpdateExtensionAndCampaign'); // VINCULA ou CRIA RAMAL + CAMPANHA
+            Route::put('/{user}', 'update'); // Atualizar Agente:
+            Route::put('/pause/{user}', 'pause'); // Pausar Agente:
 
     
         });
