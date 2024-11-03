@@ -241,24 +241,30 @@ class AgentsController extends Controller {
         }
     
         // Adicionar valores padrão
-        $defaultValues = [
-            'source' => 'hsr',
-            'server_ip' => '10.0.0.112',
-            'protocol' => 'SIP',
-            'phone_type' => 'SIP',
-            'local_gmt' => '-3.00',
-            'call_out_number_group' => 'SIP/AETelecom',
-            'template_id' => 'VICIphone WebRTC',
-            'dialplan_number' => $newExtensionNumber, // Novo número sequencial
-            'voicemail_id' => $newExtensionNumber, // Novo número sequencial
-            'login' => (string)$newExtensionNumber, // Novo número sequencial
-            'pass' => (string)$newExtensionNumber, // Novo número sequencial
-            'login_user' => (string)$newExtensionNumber, // Novo número sequencial
-            'login_pass' => (string)$newExtensionNumber, // Novo número sequencial
-            'outbound_cid' => $newExtensionNumber, // Novo número sequencial
-            'extension' => (string)$newExtensionNumber, // Campo extension
-            'fullname' => 'User ' . $newExtensionNumber // Campo fullname
-        ];
+        // Adicionar valores padrão 
+    $defaultValues = [
+        'source' => 'hsr',
+        'server_ip' => '10.0.0.112',
+        'protocolo' => 'SIP',
+        'phone_type' => "SIP",
+        'local_gmt' => '-3.00',
+        'call_out_number_group' => 'SIP/AETelecom',
+        'template_id' => 'VICIphone WebRTC',
+        'is_webphone' => 'Y',
+        'webphone_dialpad' => 'Y',
+        'webphone_auto_answer' => 'Y',
+        'webphone_dialbox' => 'Y',
+        'conf_secret' => 'HSR' . $newExtensionNumber, // Novo número sequencial com 'HSR' na frente
+        'dialplan_number' => $newExtensionNumber, // Novo número sequencial
+        'voicemail_id' => $newExtensionNumber, // Novo número sequencial
+        'login' => $newExtensionNumber, // Novo número sequencial
+        'pass' => $newExtensionNumber, // Novo número sequencial
+        'login_user' => $newExtensionNumber, // Novo número sequencial
+        'login_pass' => $newExtensionNumber, // Novo número sequencial
+        'outbound_cid' => $newExtensionNumber, // Novo número sequencial
+        'extension' => (string)$newExtensionNumber, // Campo extension
+        'fullname' => 'User   ' . $newExtensionNumber // Campo fullname
+    ];
     
         // Mesclar dados da extensão padrão com os valores padrão
         $newExtensionData = array_merge($defaultExtension->toArray(), $defaultValues);
