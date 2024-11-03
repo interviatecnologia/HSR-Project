@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Http\Request;
 use App\Models\VicidialLiveAgent;
@@ -12,10 +13,13 @@ use App\Models\Phone;
 use App\Models\VicidialList;
 use App\Models\VicidialAgentLog;
 use Illuminate\Support\Facades\DB;
+use App\Models\VicidailUser;
 use Illuminate\Support\Facades\Log;
 
 
-class DialerController extends Controller {
+
+class DialerController extends Controller
+{
     private static $validatorFields = [
         'user' => 'required|string|min:2|max:20',
         'pass' => 'required|string|min:1|max:20',
@@ -194,6 +198,7 @@ class DialerController extends Controller {
         ], 400);
     }
 }
+     
     public function pause($user) {
         $agent = VicidialLiveAgent::find($user);
         if (!$agent) return response()->json('Not found', 404);
@@ -297,7 +302,7 @@ class DialerController extends Controller {
             'phone_login' => $phoneLogin,
             'phone_pass' => $userInfo->phone_pass,
             'conf_exten' => $agent->conf_exten,
-            'campaign_id' => $campaignId,
+            'campaign_id' => $agent->campaign_id,
             'pause_code' => $pauseCode,            
             'peer_status' => 'UNKNOWN', // Se o telefone não for encontrado, status SIP é desconhecido
             'message' => 'Phone not found'
@@ -337,7 +342,7 @@ class DialerController extends Controller {
         'phone_login' => $phoneLogin,
         'phone_pass' => $userInfo->phone_pass,
         'conf_exten' => $agent && $agent->conf_exten ? $agent->conf_exten : $phoneInfo->conf_exten,
-        'campaign_id' => $campaignId,
+        'campaign_id' => $agent->campaign_id,
         'pause_code' => $pauseCode,        
         'peer_status' => $status, // Inclui o status do SIP
     ], 200);
@@ -351,11 +356,11 @@ public function allStatus()
 }
 
 
-use Illuminate\Support\Facades\DB;
 
 public function externalDial(Request $request) {
     Log::info('externalDial function called');
-    
+
+    // Validação dos parâmetros da requisição
     $validator = Validator::make($request->all(), [
         'telefone' => 'required|string|min:2',
         'agent_user' => 'required|string|min:2',
@@ -371,23 +376,17 @@ public function externalDial(Request $request) {
     $agent_user = $request->input('agent_user');
     Log::info('Parameters received', ['telefone' => $value, 'agent_user' => $agent_user]);
 
-    $alt_user = "";
-    $search = "YES";
-    $preview = "NO";
-    $focus = "YES";
+    // Preparar variáveis
     $phone_code = "55";
     $dial_ingroup = 'HSRTECH';
     $group_alias = 'HSRTECH';
     $outbound_cid = $request->input('outbound_cid') ?? '';
     $lead_id = $request->input('lead_id') ?? null;
 
-    $value = ($value == 'MANUALNEXT') ? preg_replace("/[^0-9a-zA-Z]/", "", $value) : preg_replace("/[^0-9]/", "", $value);
+    // Formatar número de telefone
+    $value = preg_replace("/[^0-9]/", "", $value);
 
-    if ((strlen($value) < 2 && strlen($lead_id) < 1) || (strlen($agent_user) < 2 && strlen($alt_user) < 2) || strlen($search) < 2 || strlen($preview) < 2 || strlen($focus) < 2) {
-        Log::error('Invalid external dial parameters');
-        return response()->json(['error' => 'Invalid external dial parameters'], 400);
-    }
-
+    // Verificar se o agente está logado
     $liveAgent = VicidialLiveAgent::where('user', $agent_user)->first();
     if (!$liveAgent) {
         Log::error('Agent user is not logged in', ['agent_user' => $agent_user]);
@@ -396,13 +395,13 @@ public function externalDial(Request $request) {
 
     Log::info('Agent found', ['liveAgent' => $liveAgent]);
 
-    // Verifique se o agente está em conferência e, caso contrário, atribua uma
+    // Verificar se o agente está em conferência
     if (!$liveAgent->conf_exten) {
-        Log::info('Agent not in conference, assigning conference');
+        Log::info('Agent not in conference, attempting to assign conference');
         $conferenceId = $this->assignConference($liveAgent);
         if (!$conferenceId) {
             Log::error('Failed to assign conference');
-            return response()->json(['error' => 'Failed to assign conference'], 500);
+            return response()->json(['error' => 'O agente deve estar conectado a uma conferência antes de realizar uma chamada.'], 400);
         }
         $liveAgent->conf_exten = $conferenceId;
         $liveAgent->save();
@@ -412,30 +411,19 @@ public function externalDial(Request $request) {
 
     Log::info('Conference assigned', ['conferenceId' => $conferenceId]);
 
-    $vac_campaign_id = $liveAgent->campaign_id;
-    $campaign = Campaign::where('campaign_id', $vac_campaign_id)->first();
-    $api_manual_dial = $campaign->api_manual_dial ?? '';
-    $agent_ready = ($api_manual_dial == 'STANDARD') ? VicidialLiveAgent::where('user', $agent_user)->where('status', 'PAUSED')->where('lead_id', '<', 1)->count() : 1;
-
-    if (strlen($dial_ingroup) > 0) {
-        $dialIngroupCount = InboundGroups::where('group_id', $dial_ingroup)->count();
-        if ($dialIngroupCount < 1) {
-            return response()->json(['notice' => 'Defined dial_ingroup not found'], 400);
-        }
-    }
-
+    // Fazer a chamada externa
     $result = $this->makeCall([
         'value' => $value,
         'agent_user' => $agent_user,
         'phone_code' => $phone_code,
         'lead_id' => $lead_id,
-        'search' => $search,
-        'preview' => $preview,
-        'focus' => $focus,
         'dial_ingroup' => $dial_ingroup,
         'group_alias' => $group_alias,
         'outbound_cid' => $outbound_cid,
-        'conference_id' => $conferenceId // Adicionar conference_id aos parâmetros
+        'conference_id' => $conferenceId,
+        'search' => 'Y', // Valor padrão para search
+        'preview' => 'N', // Valor padrão para preview
+        'focus' => 'Y' // Valor padrão para focus
     ]);
 
     if ($result['status'] == 'SUCCESS') {
@@ -446,31 +434,160 @@ public function externalDial(Request $request) {
         return response()->json(['error' => 'Failed to initiate call', 'reason' => $result['reason']], 500);
     }
 }
+   
+ private function assignConference($liveAgent) {  
+    Log::info('Assigning conference');  
+   
+    // Busca uma conferência livre  
+    $conference = DB::table('vicidial_conferences')  
+       ->where('server_ip', $liveAgent->server_ip)  
+       ->where('extension', '') // Conferência deve estar livre  
+       ->first();  
+   
+    Log::info('Conference query result', ['conference' => $conference]);  
+   
+    if ($conference) {  
+       // Formata a extensão corretamente  
+       $extension = 'SIP/' . $liveAgent->extension;  
+   
+       // Tenta atualizar a conferência com a nova extensão do agente  
+       $updateResult = DB::table('vicidial_conferences')  
+         ->where('conf_exten', $conference->conf_exten)  
+         ->update(['extension' => $extension]);  
+   
+         if ($updateResult) {
+            Log::info('Conference assigned successfully', ['conferenceId' => $conference->conf_exten, 'agent_extension' => $extension]);
+            // Atualizar a extensão do agente na tabela vicidial_live_agents
+            $liveAgent->update(['conf_exten' => $conference->conf_exten]);
 
-private function assignConference($liveAgent) {
-    Log::info('Assigning conference');
-    
-    $conference = DB::table('vicidial_conferences')
-        ->where('server_ip', $liveAgent->server_ip)
-        ->whereNull('extension')
-        ->first();
-
-    if ($conference) {
-        DB::table('vicidial_conferences')
-            ->where('conf_exten', $conference->conf_exten)
-            ->update(['extension' => $liveAgent->extension]);
-
-        Log::info('Conference assigned', ['conferenceId' => $conference->conf_exten]);
-        return $conference->conf_exten;
+            return $conference->conf_exten;
+        } else {
+            Log::error('Failed to update conference with agent extension', ['conferenceId' => $conference->conf_exten]);
+            return false;
+        }
     }
 
     Log::error('No available conference found');
     return false;
 }
 
-private function makeCall($params) {
-    Log::info('Making call', ['params' => $params]);
+   
+ public function connectAgentToConference(Request $request) {
+    Log::info('connectAgentToConference function called');
+
+    // Validação dos parâmetros da requisição
+    $validator = Validator::make($request->all(), [
+        'agent_user' => 'required|string|min:2',
+    ]);
+
+    if ($validator->fails()) {
+        Log::error('Validation failed', ['errors' => $validator->errors()]);
+        return response()->json(['error' => 'Invalid request'], 400);
+    }
+
+    $agentUser = $request->input('agent_user');
+    Log::info('Agent user received', ['agent_user' => $agentUser]);
+
+    // Busca o liveAgent para obter a extensão correta
+    $liveAgent = VicidialLiveAgent::where('user', $agentUser)->first();
+    if (!$liveAgent) {
+        Log::error('Agent user is not logged in', ['agent_user' => $agentUser]);
+        return response()->json(['error' => 'Agent user is not logged in'], 404);
+    }
+
+    Log::info('Agent found', ['liveAgent' => $liveAgent]);
+
+    // Busca uma conferência disponível
+    $conference = DB::table('vicidial_conferences')
+        ->where('server_ip', '10.0.0.112') // IP do servidor Asterisk
+        ->where('extension','') // Conferência deve estar livre
+        ->first();
+
+    if (!$conference) {
+        Log::error('No available conference found');
+        return response()->json(['error' => 'No available conference found'], 404);
+    }
+
     
+    // Conectar o agente à conferência
+    $socket = fsockopen('127.0.0.1', 5038, $errno, $errstr, 30);
+    if (!$socket) {
+        Log::error('Could not connect to AMI', ['error' => $errstr, 'errno' => $errno]);
+        return response()->json(['error' => 'Could not connect to AMI'], 500);
+    }
+
+    // Autenticar no Asterisk
+    fputs($socket, "Action: Login\r\n");
+    fputs($socket, "Username: cron\r\n");
+    fputs($socket, "Secret: 1234\r\n");
+    fputs($socket, "Events: on\r\n\r\n");
+
+    $response = $this->getAmiResponse($socket);
+    if (strpos($response, 'Success') === false) {
+        Log::error('AMI login failed', ['response' => $response]);
+        return response()->json(['error' => 'AMI login failed'], 500);
+    }
+
+    // Comando Originate
+    $extensionWithPrefix = 'SIP/' . $liveAgent->extension;
+    fputs($socket, "Action: Originate\r\n");
+    fputs($socket, "Channel: {$extensionWithPrefix}\r\n"); // Ajuste aqui para incluir o prefixo SIP/ antes da extensão
+    fputs($socket, "Context: default\r\n");
+    fputs($socket, "Exten: {$conference->conf_exten}\r\n");
+    fputs($socket, "Priority: 1\r\n");
+    fputs($socket, "Application: MeetMe\r\n");
+    fputs($socket, "Data: {$conference->conf_exten},F\r\n\r\n");
+
+    $response = $this->getAmiResponse($socket);
+    if (strpos($response, 'Success') === false) {
+        Log::error('MeetMe failed', ['response' => $response]);
+        return response()->json(['error' => 'MeetMe failed'], 500);
+    }
+
+    // Atualizar a extensão do agente na tabela vicidial_live_agents
+    $liveAgent = VicidialLiveAgent::where('user', $agentUser)->first();
+    if ($liveAgent) {
+        $liveAgent->conf_exten = $conference->conf_exten;
+        $liveAgent->save();
+    }
+
+    Log::info('Agent connected to conference', ['agent_user' => $agentUser, 'conference_id' => $conference->conf_exten]);
+    return response()->json(['message' => 'Agent connected to conference'], 200);
+}
+   
+ private function getConferenceStatus($conferenceId) {  
+    // Implementar lógica para verificar o status da conferência  
+    // ...  
+    // Exemplo:  
+    $conferenceStatus = DB::table('vicidial_conferences')  
+      ->where('conf_exten', $conferenceId)  
+      ->first();  
+   
+    $response = $this->getAmiResponse($this->socket);  
+   
+    // Verificar se a resposta do Asterisk é válida  
+    if (strpos($response, 'Success') !== false) {  
+       // Verificar se a conferência está disponível  
+       if ($conferenceStatus && $conferenceStatus->extension == '') {  
+         return 'available';  
+       } else {  
+         return 'unavailable';  
+       }  
+    } else {  
+       // Retornar um erro se a resposta do Asterisk não for válida  
+       return 'error';  
+    }  
+ }
+ 
+ 
+ private function isAgentConnectedToConference($agentUser) {
+    $liveAgent = VicidialLiveAgent::where('user', $agentUser)->first();
+    return $liveAgent && $liveAgent->conf_exten;
+}
+
+ private function makeCall($params) {
+    Log::info('Making call', ['params' => $params]);
+
     $socket = fsockopen('127.0.0.1', 5038, $errno, $errstr, 30);
     if (!$socket) {
         Log::error('Could not connect to AMI', ['error' => $errstr, 'errno' => $errno]);
@@ -488,6 +605,7 @@ private function makeCall($params) {
         return ['status' => 'ERROR', 'reason' => 'AMI login failed'];
     }
 
+    // Comando Originate
     fputs($socket, "Action: Originate\r\n");
     fputs($socket, "Channel: Local/{$params['value']}@default\r\n");
     fputs($socket, "Context: default\r\n");
@@ -519,7 +637,8 @@ private function makeCall($params) {
         return ['status' => 'ERROR', 'reason' => $response];
     }
 }
-private function getAmiResponse($socket) {
+  
+ private function getAmiResponse($socket) {
     $response = '';
     while ($line = fgets($socket, 4096)) {
         $response .= $line;
@@ -530,7 +649,7 @@ private function getAmiResponse($socket) {
     return $response;
 }
 
-
+ 
 public function hangupCall(Request $request)
 {
     Log::info('Iniciando processo de hangup', [
@@ -690,15 +809,10 @@ private function executeHangup($params)
 
 public function callAgent(Request $request)
 {
-    // Validar os parâmetros de entrada
-    $validator = Validator::make($request->all(), [
-        'user' => 'required|string|min:1|max:50',
-       'alt_user' => 'nullable|string|min:1|max:50'
-    ]);
-
-    if ($validator->fails()) {
-        return response()->json($validator->errors(), 400);
-    }
+    //$validator = Validator::make($request->all(), self::$validatorFields);
+    //if ($validator->fails()) {
+    //    return response()->json($validator->errors(), 400);
+    //}
 
     $agent_user = $request->input('user');
     $alt_user = $request->input('alt_user');
@@ -732,18 +846,16 @@ public function callAgent(Request $request)
             $call_agent_string = str_replace('|', "','", $call_agent_conference);
 
             DB::table('vicidial_manager')->insert([
+                'command' => $call_agent_string,
                 'server_ip' => $agent->server_ip,
-                'channel' => "SIP/{$agent->extension}",
-                'callerid' => "AgentLogin <{$agent_user}>",
+                'channel' => $agent->channel,
+                'context' => 'default',
+                'extension' => $conf_exten,
+                'priority' => '1',
+                'callerid' => 'AgentLogin',
                 'status' => 'NEW',
-                'action' => 'Originate',
-                'cmd_line_b' => "Channel: SIP/{$agent->extension}",
-                'cmd_line_c' => "Context: default",
-                'cmd_line_d' => "Exten: {$conf_exten}",
-                'cmd_line_e' => "Priority: 1",
-                'cmd_line_f' => "Callerid: \"AgentLogin <{$agent_user}>\"",
-                'cmd_line_g' => 'ActionID: agent_login',
-                'cmd_line_h' => "Variable: VAR1=value1"
+                'response' => 'NULL',
+                'action' => 'Originate'
             ]);
 
             return response()->json([
@@ -763,199 +875,4 @@ public function callAgent(Request $request)
         ], 400);
     }
 }
-
-public function UpdateExtensionAndCampaign(Request $request) {
-    $validator = Validator::make($request->all(), [ 
-        'user' => 'required|string|min:2|max:20', 
-        'campaign_name' => 'required|string|min:1|max:50' 
-    ]);
-
-    if ($validator->fails()) {
-        return response()->json($validator->errors(), 400);
-    }
-
-    DB::beginTransaction();
-
-    try {
-        $baseUser = $request->input('user');
-        $campaign_name = $request->input('campaign_name');
-        $user = VicidialUser::where('user', $baseUser)->first();
-
-        if ($user) {
-            // Se o agente já existe, verificar se há um ramal vinculado usando a coluna 'login'
-            $phone = Phone::where('login', $user->user)->first();
-            if (!$phone) {
-                // Se não há ramal vinculado, encontrar um ramal disponível ou criar um novo
-                $phone = $this->findAvailableExtension();
-                if (!$phone) {
-                    $phone = $this->createNewExtension();
-                }
-                // Transferir o ramal para o agente existente
-                $this->transferExtension($phone, $user);
-            }
-        } else {
-            // Garantir que o user seja único
-            $user = $baseUser;
-            $suffix = 1;
-
-            while (VicidialUser::where('user', $user)->exists()) {
-                $user = $baseUser . $suffix;
-                $suffix++;
-            }
-
-            $request->merge(['user' => $user]);
-
-            // Criação do agente com valores padrão
-            $userData = [
-                'user' => $user,
-                'pass' => $user,
-                'user_level' => 1,
-                'full_name' => $user,
-                'user_group' => 1
-            ];
-            $user = VicidialUser::create($userData);
-
-            // Encontrar um ramal disponível ou criar um novo
-            $phone = $this->findAvailableExtension();
-
-            if (!$phone) {
-                $phone = $this->createNewExtension();
-            }
-
-            // Transferir o ramal para o novo agente
-            $this->transferExtension($phone, $user);
-        }
-
-        // Atualizar a tabela vicidial_users com phone_login e phone_pass
-            $user->update([
-            'phone_login' => $phone->dialplan_number,
-            'phone_pass' => $phone->pass
-        ]);
-
-
-        // Verificar se o agente já está vinculado à campanha
-        $campaign = Campaign::where('campaign_name', $campaign_name)->first();
-
-        if (!$campaign) {
-            throw new \Exception('Campaign not found');
-        }
-
-        $existingAssociation = DB::table('vicidial_campaign_agents')
-            ->where('campaign_id', $campaign->campaign_id)
-            ->where('user', $user->user)
-            ->first();
-
-        if (!$existingAssociation) {
-            DB::table('vicidial_campaign_agents')->insert([
-                'campaign_id' => $campaign->campaign_id,
-                'user' => $user->user,
-            ]);
-        }
-
-        DB::commit();
-
-        // Saída filtrada
-        $filteredResponse = [
-            'user' => $user->user,
-            'pass' => $user->pass,
-            'full_name' => $user->full_name,
-            'user_level' => 'Agente - ' . $user->user_level,
-            'campaign' => $campaign->campaign_name,
-            'extension' => $phone->dialplan_number
-        ];
-
-        return response()->json($filteredResponse, 201);
-    } catch (\Exception $e) {
-        DB::rollBack();
-        return response()->json(['error' => $e->getMessage()], 500);
-    }
-}
-
-private function findAvailableExtension()
-    {
-        // Procurar um ramal que atenda aos parâmetros específicos
-        $phone = Phone::where('dialplan_number', '>', '8300')
-                      ->where(function ($query) {
-                          $query->where('peer_status', 'UNREGISTERED')
-                                ->orWhere('peer_status', 'UNKNOWN'); // Adiciona a condição UNKNOWN
-                      })
-                      ->where('active', 'Y') // Verifica se o ramal está ativo
-                      ->whereNull('login') // Verifica se o ramal não está associado a nenhum usuário
-                      ->first();
-    
-        if ($phone) {
-            // Se encontrou um ramal disponível, retorna o ramal
-            return $phone;
-        }
-    
-        // Se não encontrou, retorna null
-        return null;
-    }
-
-    private function createNewExtension() {
-        // ID da extensão padrão
-        $defaultExtensionId = '1000'; // Substitua pelo ID real da extensão padrão
-    
-        // Copiar parâmetros da extensão padrão
-        $defaultExtension = Phone::where('dialplan_number', $defaultExtensionId)->first();
-    
-        if (!$defaultExtension) {
-            throw new \Exception('Default extension not found');
-        }
-    
-        // Obter o último número de extensão usado
-        $lastExtension = Phone::orderBy('dialplan_number', 'desc')->first();
-        $newExtensionNumber = $lastExtension ? $lastExtension->dialplan_number + 1 : 8301;
-    
-        // Verificar se o novo número de extensão já existe e incrementar se necessário
-        while (Phone::where('dialplan_number', $newExtensionNumber)->exists()) {
-            $newExtensionNumber++;
-        }
-    
-        // Adicionar valores padrão
-        // Adicionar valores padrão 
-    $defaultValues = [
-        'source' => 'hsr',
-        'server_ip' => '10.0.0.112',
-        'protocolo' => 'SIP',
-        'phone_type' => "SIP",
-        'local_gmt' => '-3.00',
-        'call_out_number_group' => 'SIP/AETelecom',
-        'template_id' => 'VICIphone WebRTC',
-        'is_webphone' => 'Y',
-        'webphone_dialpad' => 'Y',
-        'webphone_auto_answer' => 'Y',
-        'webphone_dialbox' => 'Y',
-        'conf_secret' => 'HSR' . $newExtensionNumber, // Novo número sequencial com 'HSR' na frente
-        'dialplan_number' => $newExtensionNumber, // Novo número sequencial
-        'voicemail_id' => $newExtensionNumber, // Novo número sequencial
-        'login' => $newExtensionNumber, // Novo número sequencial
-        'pass' => $newExtensionNumber, // Novo número sequencial
-        'login_user' => $newExtensionNumber, // Novo número sequencial
-        'login_pass' => $newExtensionNumber, // Novo número sequencial
-        'outbound_cid' => $newExtensionNumber, // Novo número sequencial
-        'extension' => (string)$newExtensionNumber, // Campo extension
-        'fullname' => 'User   ' . $newExtensionNumber // Campo fullname
-    ];
-    
-        // Mesclar dados da extensão padrão com os valores padrão
-        $newExtensionData = array_merge($defaultExtension->toArray(), $defaultValues);
-    
-        // Criar a nova extensão
-        try {
-            $phone = Phone::create($newExtensionData);
-            return $phone;
-        } catch (\Exception $e) {
-            throw new \Exception('Failed to create new extension: ' . $e->getMessage());
-        }
-    }    
-        private function transferExtension($phone, $newUser)
-    {
-        // Atualiza o ramal para associá-lo ao novo agente
-        $phone->update([
-            'login' => $newUser->user // Use a coluna 'login' para a associação
-        ]);
-    }
-    
-
 }
