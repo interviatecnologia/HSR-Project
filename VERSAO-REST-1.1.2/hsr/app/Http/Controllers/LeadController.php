@@ -16,12 +16,12 @@ class LeadController extends Controller
 {
     // Validação dos campos obrigatórios e opcionais
     private static $validatorFields = [
+        'list_id' => 'integer|string|max:10',
         'phone_number' => 'required|string|min:7|max:15',
         'phone_code' => 'required|string|min:1|max:10',
         'first_name' => 'required|string|max:50',
-        'last_name' => 'required|string|max:50',
-        'list_id' => 'integer|nullable', // Agora é opcional
-        'agent_user' => 'string|max:20|nullable', 
+        'last_name' => 'string|max:20|nullable',        
+        'agent_user' => 'string|max:20|nullable', // Agora é opcional 
         'source_id' => 'string|max:50|nullable',
         'title' => 'string|max:4|nullable',
         'middle_initial' => 'string|max:1|nullable',
@@ -44,49 +44,58 @@ class LeadController extends Controller
     ];
 
     // Método para adicionar um lead
-    public function addLead(Request $request)
-{
-    $validator = Validator::make($request->all(), self::$validatorFields);
-    if ($validator->fails()) {
-        return response()->json(['errors' => $validator->errors()], 400);
+    public function addLead(Request $request)  
+{  
+    $leads = $request->input('leads');  
+    $list_id = $request->input('list_id'); // Obter list_id do request
+
+    // Verificar se a lista de leads é um array
+    if (!is_array($leads)) {  
+        return response()->json(['error' => 'Invalid request format'], 400);  
+    }  
+
+    $errors = [];
+    foreach ($leads as $key => $lead) {
+        $validator = Validator::make($lead, self::$validatorFields);
+        if ($validator->fails()) {
+            $errors[$key] = $validator->errors();
+        }
     }
 
-    // Obter campos do request
-    $phone_number = $request->input('phone_number');
-    $phone_code = $request->input('phone_code'); // Se você precisar dele mais tarde
-    //$agent_user = $request->input('agent_user'); // Removido
-
-    // Encontrar campanha (se necessário) - isso pode ser removido se não for mais relevante
-    // $campaign = Campaign::where('campaign_id', $agent->campaign_id)->first();
-    // if (!$campaign) {
-    //     return response()->json(['error' => 'Campaign not found'], 404);
-    // }
-
-    // Verificar DNC
-    $dnc_found = DB::table('vicidial_dnc')->where('phone_number', $phone_number)->exists();
-    $campaign_dnc_found = DB::table('vicidial_campaign_dnc')
-        ->where('phone_number', $phone_number)
-        // ->where('campaign_id', $campaign->campaign_id) // Removido
-        ->exists();
-
-    if ($dnc_found || $campaign_dnc_found) {
-        return response()->json(['error' => 'Phone number is in DNC'], 400);
+    if (!empty($errors)) {
+        return response()->json(['errors' => $errors], 400);
     }
 
-    // Inserir novo lead
-    $leadData = $request->all();
-    // $leadData['list_id'] = $list_id; // Adicione isso se precisar de uma lista específica
-    $leadData['status'] = 'NEW';
-    // $leadData['user'] = $agent_user; // Removido
-    $leadData['entry_date'] = Carbon::now();
-    $leadData['last_local_call_time'] = Carbon::now();
+    $insertedLeads = [];
+    foreach ($leads as $lead) {  
+        $phone_number = $lead['phone_number'];  
+        $phone_code = $lead['phone_code'];  
 
-    $lead = Lead::create($leadData);
+        $dnc_found = DB::table('vicidial_dnc')->where('phone_number', $phone_number)->exists();  
+        $campaign_dnc_found = DB::table('vicidial_campaign_dnc')  
+          ->where('phone_number', $phone_number)  
+          ->exists();  
 
-    return response()->json([
-        'success' => true,
-        'lead' => $lead
-    ], 201);
+        if ($dnc_found || $campaign_dnc_found) {  
+            return response()->json(['error' => 'Phone number is in DNC'], 400);  
+        }  
+
+        $leadData = $lead;  
+        $leadData['status'] = 'NEW';  
+        $leadData['entry_date'] = Carbon::now();  
+        $leadData['last_local_call_time'] = Carbon::now();  
+
+        if (!empty($list_id)) {
+            $leadData['list_id'] = $list_id; // Aplicar list_id a todos os leads
+        }
+
+        $insertedLeads[] = Lead::create($leadData);  
+    }  
+
+    return response()->json([  
+        'success' => true,  
+        'leads' => $insertedLeads  
+    ], 201);  
 }
 
     public function index(): JsonResponse
@@ -138,12 +147,13 @@ public function search(Request $request, $listId): JsonResponse
         // Query the leads based on the list ID and search term
         $leads = Lead::where('list_id', $listId)
             ->where(function($query) use ($searchTerm) {
-                $query->where('lead_id', 'LIKE', "%{$searchTerm}%")
+                $query->where('list_id', 'LIKE', "%{$searchTerm}%")
+                      ->where('lead_id', 'LIKE', "%{$searchTerm}%")
                       ->where('first_name', 'LIKE', "%{$searchTerm}%")
                       ->orWhere('last_name', 'LIKE', "%{$searchTerm}%")
                       ->orWhere('phone_number', 'LIKE', "%{$searchTerm}%");
             })
-            ->get(['lead_id','first_name', 'last_name', 'phone_number']);
+            ->get(['list_id','lead_id','first_name', 'last_name', 'phone_number']);
 
         return response()->json($leads);
     }
@@ -163,4 +173,14 @@ public function search(Request $request, $listId): JsonResponse
         // Retorna uma resposta de sucesso
         return response()->json(['message' => 'Lead deleted successfully'], 204);
     }
+
+    
+    public function listLeadLists(): JsonResponse    
+{
+    // Obter todas as listas de leads da tabela vicidial_lists
+    $leadLists = DB::table('vicidial_lists')->get(['list_id', 'list_name', 'campaign_id', 'active', 'list_description']);
+
+    return response()->json($leadLists);
+}
+
 }
