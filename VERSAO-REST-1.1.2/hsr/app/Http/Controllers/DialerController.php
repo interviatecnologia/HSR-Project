@@ -682,30 +682,49 @@ public function disconnectAgentFromConference($agentUser ) {
     return response()->json(['message' => 'Agent disconnected from conference'], 200);
 }
 
- private function getConferenceStatus($conferenceId) {  
-    // Implementar lógica para verificar o status da conferência  
-    // ...  
-    // Exemplo:  
+private function getConferenceStatus($conferenceId) {  
+    // Consultar o status da conferência  
     $conferenceStatus = DB::table('vicidial_conferences')  
-      ->where('conf_exten', $conferenceId)  
-      ->first();  
-   
-    $response = $this->getAmiResponse($this->socket);  
-   
+        ->where('conf_exten', $conferenceId)  
+        ->first();  
+
+    if (!$conferenceStatus) {  
+        return 'error';  
+    }  
+
+    // Criar socket para conexão com AMI
+    $socket = fsockopen('127.0.0.1', 5038, $errno, $errstr, 30);
+    if (!$socket) {
+        Log::error('Could not connect to AMI', ['error' => $errstr, 'errno' => $errno]);
+        return ['status' => 'ERROR', 'reason' => "Could not connect to AMI: $errstr ($errno)"];
+    }
+
+    // Enviar informações de autenticação
+    fputs($socket, "Action: Login\r\n");
+    fputs($socket, "Username: cron\r\n");
+    fputs($socket, "Secret: 1234\r\n");
+    fputs($socket, "Events: on\r\n\r\n");
+
+    // Ler a resposta da autenticação
+    $response = $this->getAmiResponse($socket);  
+
+    // Fechar o socket após o uso
+    fclose($socket);
+
     // Verificar se a resposta do Asterisk é válida  
     if (strpos($response, 'Success') !== false) {  
-       // Verificar se a conferência está disponível  
-       if ($conferenceStatus && $conferenceStatus->extension == '') {  
-         return 'available';  
-       } else {  
-         return 'unavailable';  
-       }  
-    } else {  
-       // Retornar um erro se a resposta do Asterisk não for válida  
-       return 'error';  
+        // Verificar se a conferência está disponível  
+        if ($conferenceStatus && empty($conferenceStatus->extension)) {  
+            return 'available';  
+        } else {  
+            return 'unavailable';  
+        }  
+    } else {
+        // Retornar um erro se a resposta do Asterisk não for válida  
+        Log::error('Authentication failed', ['response' => $response]);
+        return 'error';  
     }  
- }
- 
+}
  
  private function isAgentConnectedToConference($agentUser) {
     $liveAgent = VicidialLiveAgent::where('user', $agentUser)->first();
@@ -772,18 +791,6 @@ private function getAmiResponse($socket) {
     }
     return $response;
 }
-
-
-//private function getAmiResponse($socket) {
-    //$response = '';
-   // while ($line = fgets($socket, 4096)) {
-       // $response .= $line;
-       // if (trim($line) == '') {
-        //    break;
-        //}
-    //}
-    //return $response;
-//}
 
  
 public function hangupCall(Request $request)
