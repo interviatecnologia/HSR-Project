@@ -183,4 +183,26 @@ public function search(Request $request, $listId): JsonResponse
     return response()->json($leadLists);
 }
 
+public function updateActiveStatus(Request $request): JsonResponse
+{
+    // Validação dos dados recebidos
+    $validatedData = $request->validate([
+        'list_id' => 'required|integer', // O campo list_id deve ser requerido
+        'active' => 'required|string|in:Y,N', // O campo active deve ser 'Y' ou 'N'
+    ]);
+
+    // Encontrar a lista pelo ID
+    $list = DB::table('vicidial_lists')->where('list_id', $validatedData['list_id'])->first();
+
+    // Verificar se a lista existe
+    if (!$list) {
+        return response()->json(['error' => 'List not found'], 404);
+    }
+
+    // Atualizar o status ativo
+    DB::table('vicidial_lists')->where('list_id', $validatedData['list_id'])->update(['active' => $validatedData['active']]);
+
+    return response()->json(['success' => true, 'list_id' => $validatedData['list_id'], 'active' => $validatedData['active']], 200);
+}
+
 }

@@ -131,6 +131,7 @@ Route::prefix('campaign')->group(function () {
             Route::delete('/{id}', 'delete');
             Route::get('/list/search/{listId}', [LeadController::class, 'search']); // Pesquisa por leads em uma lista especifica 
             Route::get('list/lead-lists', [LeadController::class, 'listLeadLists']); // Pesquisa por Lista de leads 
+            Route::put('/list/active', [LeadController::class, 'updateActiveStatus']);
         });
     });
 

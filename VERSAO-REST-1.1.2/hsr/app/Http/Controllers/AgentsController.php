@@ -97,7 +97,7 @@ class AgentsController extends Controller {
     public function createWithExtensionAndCampaign(Request $request) {
         $validator = Validator::make($request->all(), [ 
             'user' => 'required|string|min:2|max:20', 
-            'campaign_name' => 'required|string|min:1|max:50' 
+            'campaign_id' => 'required|string|min:1|max:50' 
         ]);
         
         if ($validator->fails()) return response()->json($validator->errors(), 400);
@@ -162,7 +162,7 @@ class AgentsController extends Controller {
 
 
             // Verificar se o agente já está vinculado à campanha
-            $campaign = Campaign::where('campaign_name', $campaign_name)->first();
+            $campaign = Campaign::where('campaign_id', $request->input('campaign_id'))->first();
 
             if (!$campaign) {
                 throw new \Exception('Campaign not found');
@@ -189,7 +189,11 @@ class AgentsController extends Controller {
                 'full_name' => $user->full_name,
                 'user_level' => 'Agente - ' . $user->user_level,
                 'campaign' => $campaign->campaign_name,
-                'extension' => $phone->dialplan_number
+                'campaign_id' => $campaign->campaign_id,
+                'extension' => $phone->extension,
+                'conf_secret' => $phone->conf_secret,
+                'phone_login' => $phone->login,
+                'phone_pass' => $phone->pass,
             ];
 
             return response()->json($filteredResponse, 201);
@@ -249,7 +253,7 @@ class AgentsController extends Controller {
         'phone_type' => "SIP",
         'local_gmt' => '-3.00',
         'call_out_number_group' => 'SIP/AETelecom',
-        'template_id' => 'VICIphone WebRTC',
+        'template_id' => 'VICIphone',
         'is_webphone' => 'Y',
         'webphone_dialpad' => 'Y',
         'webphone_auto_answer' => 'Y',
