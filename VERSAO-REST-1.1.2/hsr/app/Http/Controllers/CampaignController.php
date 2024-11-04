@@ -108,17 +108,21 @@ class CampaignController extends Controller {
 
     public function put(Request $request, $campaign_id) {
         $validator = Validator::make($request->all(), [
-            'campaign_name' => 'required|string|min:1|max:50',
+            'campaign_name' => 'required|string|min:1|max:50'
         ]);
-
+        
         if ($validator->fails()) return response()->json($validator->errors(), 400);
-
+        
         $campaign = Campaign::find($campaign_id);
         if (!$campaign) return response()->json(['error' => 'Campaign not found'], 404);
-
-        $campaign->update($request->only(['campaign_name']));
-        return response()->json('Success', 200);
+    
+        $input = $request->all();
+        $campaign->update($input);
+        
+        return response()->json($campaign, 200);
     }
+    
+    
 
     public function delete($campaign_id) {
         $campaign = Campaign::find($campaign_id);
