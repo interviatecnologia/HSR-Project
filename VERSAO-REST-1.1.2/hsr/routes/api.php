@@ -177,6 +177,14 @@ Route::prefix('campaign')->group(function () {
         });
     });    
     
+    Route::prefix('call-time')->group(function () { 
+        Route::get('/', [CallTimeController::class, 'index']); 
+        Route::post('/', [CallTimeController::class, 'store']); 
+        Route::put('/{call_time_id}', [CallTimeController::class, 'update']); 
+        Route::delete('/{call_time_id}', [CallTimeController::class, 'destroy']); 
+        Route::get('/show/{call_time_name}', [CallTimeController::class, 'show']); // Adiciona a rota para mostrar um call_time específico
+        Route::get('/find', [CallTimeController::class, 'findByCallTimeName']); // Nova rota para encontrar call_time pelo nome
+    });
 
     
     Route::middleware('auth:sanctum')->get('/token-test', function (Request $request) {
@@ -184,12 +192,8 @@ Route::prefix('campaign')->group(function () {
 
         
     });
-
-    Route::prefix('call-time')->group(function () { 
-        Route::get('/', [CallTimeController::class, 'index']); 
-        Route::post('/', [CallTimeController::class, 'store']); 
-        Route::put('/{call_time_id}', [CallTimeController::class, 'update']); 
-        Route::delete('/{call_time_id}', [CallTimeController::class, 'destroy']); });
     
+
+
 //});
 
