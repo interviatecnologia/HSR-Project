@@ -14,6 +14,41 @@ class CallTimeController extends Controller
         return response()->json($callTimes, 200);
     }
 
+    public function show($call_time_name)
+{
+    $callTime = DB::table('vicidial_call_times')
+        ->where('call_time_name', $call_time_name)
+        ->first();
+
+    if ($callTime) {
+        return response()->json($callTime, 200);
+    } else {
+        return response()->json(['error' => 'Call time not found'], 404);
+    }
+}
+
+public function findByCallTimeName(Request $request)
+{
+    $request->validate([
+        'call_time_name' => 'required|string|max:100'
+    ]);
+
+    $callTimeName = $request->input('call_time_name');
+
+    $callTime = DB::table('vicidial_call_times')
+        ->where('call_time_name', $callTimeName)
+        ->first();
+
+    if ($callTime) {
+        return response()->json($callTime, 200);
+    } else {
+        return response()->json(['error' => 'Call time not found'], 404);
+    }
+}
+
+
+
+
     // Método para adicionar um novo horário de atendimento
     public function store(Request $request)
     {
@@ -89,77 +124,78 @@ class CallTimeController extends Controller
 
     // Método para atualizar um horário de atendimento existente
     public function update(Request $request, $call_time_id)
-    {
-        $request->validate([
-            'call_time_name' => 'required|string|max:100',
-            'call_time_comments' => 'nullable|string|max:255',
-            'ct_default_start' => 'required|integer',
-            'ct_default_stop' => 'required|integer',
-            'ct_sunday_start' => 'nullable|integer',
-            'ct_sunday_stop' => 'nullable|integer',
-            'ct_monday_start' => 'nullable|integer',
-            'ct_monday_stop' => 'nullable|integer',
-            'ct_tuesday_start' => 'nullable|integer',
-            'ct_tuesday_stop' => 'nullable|integer',
-            'ct_wednesday_start' => 'nullable|integer',
-            'ct_wednesday_stop' => 'nullable|integer',
-            'ct_thursday_start' => 'nullable|integer',
-            'ct_thursday_stop' => 'nullable|integer',
-            'ct_friday_start' => 'nullable|integer',
-            'ct_friday_stop' => 'nullable|integer',
-            'ct_saturday_start' => 'nullable|integer',
-            'ct_saturday_stop' => 'nullable|integer',
-            'ct_state_call_times' => 'nullable|string|max:100',
-            'default_afterhours_filename_override' => 'nullable|string|max:255',
-            'sunday_afterhours_filename_override' => 'nullable|string|max:255',
-            'monday_afterhours_filename_override' => 'nullable|string|max:255',
-            'tuesday_afterhours_filename_override' => 'nullable|string|max:255',
-            'wednesday_afterhours_filename_override' => 'nullable|string|max:255',
-            'thursday_afterhours_filename_override' => 'nullable|string|max:255',
-            'friday_afterhours_filename_override' => 'nullable|string|max:255',
-            'saturday_afterhours_filename_override' => 'nullable|string|max:255',
-            'user_group' => 'required|string|max:20',
-            'ct_holidays' => 'nullable|string|max:255',
-        ]);
+{
+    $request->validate([
+        'call_time_name' => 'nullable|string|max:100',
+        'call_time_comments' => 'nullable|string|max:255',
+        'ct_default_start' => 'nullable|integer',
+        'ct_default_stop' => 'nullable|integer',
+        'ct_sunday_start' => 'nullable|integer',
+        'ct_sunday_stop' => 'nullable|integer',
+        'ct_monday_start' => 'nullable|integer',
+        'ct_monday_stop' => 'nullable|integer',
+        'ct_tuesday_start' => 'nullable|integer',
+        'ct_tuesday_stop' => 'nullable|integer',
+        'ct_wednesday_start' => 'nullable|integer',
+        'ct_wednesday_stop' => 'nullable|integer',
+        'ct_thursday_start' => 'nullable|integer',
+        'ct_thursday_stop' => 'nullable|integer',
+        'ct_friday_start' => 'nullable|integer',
+        'ct_friday_stop' => 'nullable|integer',
+        'ct_saturday_start' => 'nullable|integer',
+        'ct_saturday_stop' => 'nullable|integer',
+        'ct_state_call_times' => 'nullable|string|max:100',
+        'default_afterhours_filename_override' => 'nullable|string|max:255',
+        'sunday_afterhours_filename_override' => 'nullable|string|max:255',
+        'monday_afterhours_filename_override' => 'nullable|string|max:255',
+        'tuesday_afterhours_filename_override' => 'nullable|string|max:255',
+        'wednesday_afterhours_filename_override' => 'nullable|string|max:255',
+        'thursday_afterhours_filename_override' => 'nullable|string|max:255',
+        'friday_afterhours_filename_override' => 'nullable|string|max:255',
+        'saturday_afterhours_filename_override' => 'nullable|string|max:255',
+        'user_group' => 'nullable|string|max:20',
+        'ct_holidays' => 'nullable|string|max:255',
+    ]);
 
-        $data = $request->only([
-            'call_time_name',
-            'call_time_comments',
-            'ct_default_start',
-            'ct_default_stop',
-            'ct_sunday_start',
-            'ct_sunday_stop',
-            'ct_monday_start',
-            'ct_monday_stop',
-            'ct_tuesday_start',
-            'ct_tuesday_stop',
-            'ct_wednesday_start',
-            'ct_wednesday_stop',
-            'ct_thursday_start',
-            'ct_thursday_stop',
-            'ct_friday_start',
-            'ct_friday_stop',
-            'ct_saturday_start',
-            'ct_saturday_stop',
-            'ct_state_call_times',
-            'default_afterhours_filename_override',
-            'sunday_afterhours_filename_override',
-            'monday_afterhours_filename_override',
-            'tuesday_afterhours_filename_override',
-            'wednesday_afterhours_filename_override',
-            'thursday_afterhours_filename_override',
-            'friday_afterhours_filename_override',
-            'saturday_afterhours_filename_override',
-            'user_group',
-            'ct_holidays'
-        ]);
+    $data = $request->only([
+        'call_time_name',
+        'call_time_comments',
+        'ct_default_start',
+        'ct_default_stop',
+        'ct_sunday_start',
+        'ct_sunday_stop',
+        'ct_monday_start',
+        'ct_monday_stop',
+        'ct_tuesday_start',
+        'ct_tuesday_stop',
+        'ct_wednesday_start',
+        'ct_wednesday_stop',
+        'ct_thursday_start',
+        'ct_thursday_stop',
+        'ct_friday_start',
+        'ct_friday_stop',
+        'ct_saturday_start',
+        'ct_saturday_stop',
+        'ct_state_call_times',
+        'default_afterhours_filename_override',
+        'sunday_afterhours_filename_override',
+        'monday_afterhours_filename_override',
+        'tuesday_afterhours_filename_override',
+        'wednesday_afterhours_filename_override',
+        'thursday_afterhours_filename_override',
+        'friday_afterhours_filename_override',
+        'saturday_afterhours_filename_override',
+        'user_group',
+        'ct_holidays'
+    ]);
 
-        DB::table('vicidial_call_times')
-            ->where('call_time_id', $call_time_id)
-            ->update($data);
+    DB::table('vicidial_call_times')
+        ->where('call_time_id', $call_time_id)
+        ->update(array_filter($data)); // Remove valores nulos
 
-        return response()->json(['message' => 'Call time updated'], 200);
-    }
+    return response()->json(['message' => 'Call time updated'], 200);
+}
+
 
     // Método para deletar um horário de atendimento
     public function destroy($call_time_id)
