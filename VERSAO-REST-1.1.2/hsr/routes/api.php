@@ -15,6 +15,7 @@ use App\Http\Controllers\ReportController;
 use App\Http\Controllers\RecordingController;
 use App\Http\Controllers\DNCController;
 use App\Http\Controllers\HolidayController;
+use App\Http\Controllers\CallTimeController;
 
 use App\Http\Controllers\Agent\DillerController;
 
@@ -183,6 +184,12 @@ Route::prefix('campaign')->group(function () {
 
         
     });
+
+    Route::prefix('call-time')->group(function () { 
+        Route::get('/', [CallTimeController::class, 'index']); 
+        Route::post('/', [CallTimeController::class, 'store']); 
+        Route::put('/{call_time_id}', [CallTimeController::class, 'update']); 
+        Route::delete('/{call_time_id}', [CallTimeController::class, 'destroy']); });
     
 //});
 
