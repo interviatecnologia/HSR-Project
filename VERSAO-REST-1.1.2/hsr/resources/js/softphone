@@ -1,3 +1,5 @@
+console.log('softphone.js loaded');
+
 document.addEventListener('DOMContentLoaded', () => {
   let audioContext;
   let localStream;
@@ -34,6 +36,13 @@ document.addEventListener('DOMContentLoaded', () => {
           console.error('Error accessing media devices.', error);
           return;
       }
+
+    // Adicione a configuração STUN e ICE no peerConnection
+    const peerConnection = new RTCPeerConnection({
+    iceServers: [{ urls: 'stun:stun.l.google.com:19302' }],
+      iceCandidatePoolSize: 10
+    });
+     
 
       // Set up SIP client using SIP.js
       const sipClient = new SIP.UserAgent({
@@ -123,29 +132,30 @@ document.addEventListener('DOMContentLoaded', () => {
           });
       });
 
+      
       // Function to make a call
-      // Function to make a call
-function makeCall(number) {
-  const targetURI = SIP.UserAgent.makeURI(`sip:${number}@fastdialer.fastquest.net`);
-  if (!targetURI) {
-      console.error('Invalid target URI');
-      return;
-  }
-  
-  const inviter = new SIP.Inviter(sipClient, targetURI, {
-      sessionDescriptionHandlerOptions: {
-          constraints: { audio: true, video: false }
+      function makeCall(number) {
+        const targetURI = SIP.UserAgent.makeURI(`sip:${number}@fastdialer.fastquest.net`);
+        if (!targetURI) {
+          console.error('Invalid target URI');
+          return;
+        }
+      
+        const inviter = new SIP.Inviter(sipClient, targetURI, {
+          sessionDescriptionHandlerOptions: {
+            constraints: { audio: true, video: false }
+          }
+        });
+      
+        inviter.invite().then((session) => {
+          console.log('Call started', session);
+          currentSession = session;
+          handleSession(session);
+        }).catch((error) => {
+          console.error('Failed to make call', error);
+        });
       }
-  });
-
-  inviter.invite().then((session) => {
-      console.log('Call started');
-      currentSession = session;
-      handleSession(session);
-  }).catch((error) => {
-      console.error('Failed to make call', error);
-  });
-}
+      
 
 
       // Function to hang up a call
@@ -159,44 +169,78 @@ function makeCall(number) {
       }
 
       // Function to handle incoming call
-      function handleIncomingCall(session) {
-          session.accept({
-              sessionDescriptionHandlerOptions: {
-                  constraints: { audio: true, video: false }
-              }
-          }).then(() => {
-              console.log('Call accepted');
-              currentSession = session;
-              handleSession(session);
-          }).catch((error) => {
-              console.error('Failed to accept call', error);
-          });
+function handleIncomingCall(session) {
+  console.log('Handling incoming call', session);
+  session.accept({
+    sessionDescriptionHandlerOptions: {
+      constraints: { audio: true, video: false }
+    }
+  }).then(() => {
+    console.log('Call accepted', session);
+    currentSession = session;
+    handleSession(session);
+  }).catch((error) => {
+    console.error('Failed to accept call', error);
+  });
 
-          session.on('bye', () => {
-              console.log('Call ended by remote');
-              currentSession = null;
-          });
-      }
+  session.on('bye', () => {
+    console.log('Call ended by remote');
+    currentSession = null;
+  });
+}
 
       // Function to handle session for audio stream
-      function handleSession(session) {
-          const pc = session.sessionDescriptionHandler.peerConnection;
-
+      function handleSession(session) {  
+        console.log('Session:', session);  
+        console.log('Session description handler:', session.sessionDescriptionHandler);  
+        console.log('Peer connection:', session.sessionDescriptionHandler.peerConnection);  
+        if (!session.sessionDescriptionHandler || !session.sessionDescriptionHandler.peerConnection) {  
+         console.error('Session description handler or peer connection is undefined.');  
+         return;  
+        }  
+      
+        const pc = session.sessionDescriptionHandler.peerConnection;
+      
+        if (localStream) {
+          console.log('Adding local audio tracks to peer connection.');
           localStream.getTracks().forEach(track => {
-              pc.addTrack(track, localStream);
+            pc.addTrack(track, localStream);
           });
-
-          pc.ontrack = (event) => {
-              console.log('Received audio stream');
-              handleIncomingAudioStream(event.streams[0]);
-          };
-      }
+        } else {
+          console.error('Local stream is not available.');
+        }
+      
+        pc.ontrack = (event) => {
+          console.log('Received audio stream', event.streams);
+          handleIncomingAudioStream(event.streams[0]);
+        };
+      
+        pc.oniceconnectionstatechange = () => {
+          console.log('ICE Connection State changed to', pc.iceConnectionState);
+        };
+      
+        pc.onconnectionstatechange = () => {
+          console.log('Connection State changed to', pc.connectionState);
+        };
+      } 
 
       // Function to handle incoming audio stream
       function handleIncomingAudioStream(stream) {
-          const audioElement = document.createElement('audio');
-          audioElement.srcObject = stream;
-          audioElement.play();
+        console.log('Handling incoming audio stream:', stream);
+        const audioElement = document.createElement('audio');
+        audioElement.srcObject = stream;
+        audioElement.play().catch(error => {
+          console.error('Error playing audio stream', error);
+        });
       }
+      
   });
 });
+
+
+
+
+
+
+
+
