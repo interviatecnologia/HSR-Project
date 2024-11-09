@@ -1,0 +1,202 @@
+document.addEventListener('DOMContentLoaded', () => {
+  let audioContext;
+  let localStream;
+
+  // Get form elements
+  const form = document.getElementById('sip-credentials-form');
+  const loginDiv = document.getElementById('login');
+  const softphoneDiv = document.getElementById('softphone');
+  const statusDiv = document.getElementById('status');
+  const statusUnregisteredDiv = document.getElementById('status-unregistered');
+  const dialpad = document.getElementById('dialpad');
+  const sendButton = document.getElementById('send-button');
+  const hangupButton = document.getElementById('hangup-button');
+  const unregisterButton = document.getElementById('unregister-button');
+  let currentSession;
+
+  // Check if all elements are found
+  if (!form || !loginDiv || !softphoneDiv || !statusDiv || !statusUnregisteredDiv || !dialpad || !sendButton || !hangupButton || !unregisterButton) {
+      console.error('One or more elements not found in the DOM.');
+      return;
+  }
+
+  // Add event listener to form submit
+  form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+
+      // Get values from form fields
+      const sipUsername = document.getElementById('sip-username').value;
+      const sipPassword = document.getElementById('sip-password').value;
+
+      try {
+          localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      } catch (error) {
+          console.error('Error accessing media devices.', error);
+          return;
+      }
+
+      // Set up SIP client using SIP.js
+      const sipClient = new SIP.UserAgent({
+          uri: SIP.UserAgent.makeURI(`sip:${sipUsername}@fastdialer.fastquest.net`),
+          transportOptions: {
+              server: 'wss://fastdialer.fastquest.net:8089/ws'
+          },
+          authorizationUsername: sipUsername,
+          authorizationPassword: sipPassword,
+          sessionDescriptionHandlerFactoryOptions: {
+              constraints: {
+                  audio: true,
+                  video: false
+              }
+          }
+      });
+
+      console.log('Initializing SIP client with:', {
+          uri: `sip:${sipUsername}@fastdialer.fastquest.net`,
+          server: 'wss://fastdialer.fastquest.net:8089/ws'
+      });
+
+      // Initialize Registerer
+      const registerer = new SIP.Registerer(sipClient);
+
+      // Start the SIP client
+      sipClient.start().then(() => {
+          console.log('SIP client started');
+          // Send SIP registration request
+          registerer.register().then(() => {
+              console.log('Sending SIP registration request');
+          }).catch((error) => {
+              console.error('Failed to send SIP registration request', error);
+          });
+      }).catch((error) => {
+          console.error('Failed to start SIP client', error);
+      });
+
+      sipClient.delegate = {
+          onRegistered: () => {
+              console.log('SIP client registered successfully');
+              statusDiv.style.display = 'block';
+              statusUnregisteredDiv.style.display = 'none';
+          },
+          onUnregistered: () => {
+              console.log('SIP client unregistered');
+              statusDiv.style.display = 'none';
+              statusUnregisteredDiv.style.display = 'block';
+          },
+          onInvite: (session) => {
+              console.log('Received invite');
+              // Handle incoming call
+              handleIncomingCall(session);
+          },
+          onRegistrationFailed: (error) => {
+              console.error('SIP client registration failed', error);
+          }
+      };
+
+      // Set up dialpad functionality
+      dialpad.addEventListener('click', (event) => {
+          const number = event.target.value;
+          document.getElementById('number-input').value += number;
+      });
+
+      // Set up send button functionality
+      sendButton.addEventListener('click', () => {
+          const number = document.getElementById('number-input').value;
+          makeCall(number);
+      });
+
+      // Set up hangup button functionality
+      hangupButton.addEventListener('click', () => {
+          if (currentSession) {
+              hangupCall(currentSession);
+          }
+      });
+
+      // Set up unregister button functionality
+      unregisterButton.addEventListener('click', () => {
+          registerer.unregister().then(() => {
+              console.log('SIP client unregistered');
+              statusDiv.style.display = 'none';
+              statusUnregisteredDiv.style.display = 'block';
+          }).catch((error) => {
+              console.error('Failed to unregister SIP client', error);
+          });
+      });
+
+      // Function to make a call
+      // Function to make a call
+function makeCall(number) {
+  const targetURI = SIP.UserAgent.makeURI(`sip:${number}@fastdialer.fastquest.net`);
+  if (!targetURI) {
+      console.error('Invalid target URI');
+      return;
+  }
+  
+  const inviter = new SIP.Inviter(sipClient, targetURI, {
+      sessionDescriptionHandlerOptions: {
+          constraints: { audio: true, video: false }
+      }
+  });
+
+  inviter.invite().then((session) => {
+      console.log('Call started');
+      currentSession = session;
+      handleSession(session);
+  }).catch((error) => {
+      console.error('Failed to make call', error);
+  });
+}
+
+
+      // Function to hang up a call
+      function hangupCall(session) {
+          session.bye().then(() => {
+              console.log('Call ended');
+              currentSession = null;
+          }).catch((error) => {
+              console.error('Failed to hang up call', error);
+          });
+      }
+
+      // Function to handle incoming call
+      function handleIncomingCall(session) {
+          session.accept({
+              sessionDescriptionHandlerOptions: {
+                  constraints: { audio: true, video: false }
+              }
+          }).then(() => {
+              console.log('Call accepted');
+              currentSession = session;
+              handleSession(session);
+          }).catch((error) => {
+              console.error('Failed to accept call', error);
+          });
+
+          session.on('bye', () => {
+              console.log('Call ended by remote');
+              currentSession = null;
+          });
+      }
+
+      // Function to handle session for audio stream
+      function handleSession(session) {
+          const pc = session.sessionDescriptionHandler.peerConnection;
+
+          localStream.getTracks().forEach(track => {
+              pc.addTrack(track, localStream);
+          });
+
+          pc.ontrack = (event) => {
+              console.log('Received audio stream');
+              handleIncomingAudioStream(event.streams[0]);
+          };
+      }
+
+      // Function to handle incoming audio stream
+      function handleIncomingAudioStream(stream) {
+          const audioElement = document.createElement('audio');
+          audioElement.srcObject = stream;
+          audioElement.play();
+      }
+  });
+});

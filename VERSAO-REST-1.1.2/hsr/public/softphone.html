@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Softphone HSRTech</title>
+  <script src="https://cdn.jsdelivr.net/npm/webrtc-swarm@latest/dist/webrtc-swarm.min.js"></script>  
+  <script src="https://cdn.jsdelivr.net/npm/sip.js@0.20.0/dist/sip.js"></script>   
+  <script src="https://cdn.jsdelivr.net/npm/sip.js@latest/dist/sip.min.js"></script>   
+  <script src="https://fastdialer.fastquest.net/hsr/js/softphone.js"></script> 
+  <style>
+    .button {
+      padding: 10px 20px;
+      font-size: 16px;
+      cursor: pointer;
+      border: none;
+      color: white;
+    }
+
+    .registered {
+      background-color: green;
+    }
+
+    .not-registered {
+      background-color: red;
+    }
+  </style>
+</head>
+<body>
+  <h1>Softphone HSR</h1>
+  <div id="status" style="display:none; color: green;">Registered</div>
+  <div id="status-unregistered" style="color: red;">Not Registered</div>
+  <div id="login">
+    <form id="sip-credentials-form">
+      <label for="sip-username">SIP Username:</label>
+      <input type="text" id="sip-username" name="sip-username" required>
+      <br>
+      <label for="sip-password">SIP Password:</label>
+      <input type="password" id="sip-password" name="sip-password" required>
+      <br>
+      <button type="submit" id="start-button" class="button not-registered">Register SIP</button>
+    </form>
+  </div>
+  <div id="softphone">
+    <div id="dialpad">
+      <button value="1">1</button>
+      <button value="2">2</button>
+      <button value="3">3</button>
+      <button value="4">4</button>
+      <button value="5">5</button>
+      <button value="6">6</button>
+      <button value="7">7</button>
+      <button value="8">8</button>
+      <button value="9">9</button>
+      <button value="0">0</button>
+      <button value="#">#</button>
+      <button value="*">*</button>
+    </div>
+    <input type="text" id="number-input" name="number-input">
+    <button id="send-button">Send</button>
+    <button id="hangup-button">Hangup</button>
+    <button id="unregister-button">Unregister</button>
+  </div>
+  <script src="script.js"></script>
+</body>
+</html>
