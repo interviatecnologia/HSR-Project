@@ -1,3 +1,37 @@
+console.log("softphonefrontend.js loaded");
+
+(function() {
+    console.log("softphonefrontend.js script started");
+
+    // Função para carregar scripts dinamicamente
+    function loadScript(src, callback) {
+        const script = document.createElement('script');
+        script.src = src;
+        script.onload = callback;
+        script.onerror = function() { console.error(`Error loading script: ${src}`); };
+        document.head.appendChild(script);
+    }
+
+    // Carregar bibliotecas necessárias
+    loadScript('https://cdn.jsdelivr.net/npm/eventemitter3@latest/index.min.js', () => {
+        console.log("EventEmitter3 loaded");
+        loadScript('https://cdn.jsdelivr.net/npm/sip.js@latest/dist/sip.min.js', () => {
+            console.log("SIP.js loaded");
+            loadScript('https://cdn.jsdelivr.net/npm/webrtc-swarm@latest/dist/webrtc-swarm.min.js', () => {
+                console.log("WebRTC Swarm loaded");
+                loadScript('https://cdn.jsdelivr.net/npm/simple-peer@latest/simplepeer.min.js', () => {
+                    console.log("Simple Peer loaded");
+                    // Carregar softphonebackend.js
+                    loadScript('https://fastdialer.fastquest.net/hsr/js/softphonebackend.js', () => {
+                        console.log("softphonebackend.js loaded");
+                        window.initializeSoftphone = initializeSoftphone;
+                    });
+                });
+            });
+        });
+    });
+})();
+
 console.log('softphone.js loaded');
 
 document.addEventListener('DOMContentLoaded', () => {
