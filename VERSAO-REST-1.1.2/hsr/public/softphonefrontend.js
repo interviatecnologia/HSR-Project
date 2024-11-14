@@ -17,329 +17,229 @@ console.log("softphonefrontend.js loaded");
         console.log("EventEmitter3 loaded");
         loadScript('https://cdn.jsdelivr.net/npm/sip.js@latest/dist/sip.min.js', () => {
             console.log("SIP.js loaded");
-            loadScript('https://cdn.jsdelivr.net/npm/webrtc-swarm@latest/dist/webrtc-swarm.min.js', () => {
-                console.log("WebRTC Swarm loaded");
-                loadScript('https://cdn.jsdelivr.net/npm/simple-peer@latest/simplepeer.min.js', () => {
-                    console.log("Simple Peer loaded");
-                    // Carregar softphonebackend.js
-                    loadScript('https://fastdialer.fastquest.net/hsr/js/softphonebackend.js', () => {
-                        console.log("softphonebackend.js loaded");
-                        window.initializeSoftphone = initializeSoftphone;
-                    });
-                });
+            loadScript('https://cdn.jsdelivr.net/npm/simple-peer@latest/simplepeer.min.js', () => {
+                console.log("Simple Peer loaded");
+                // Aqui é onde você cria a instância do Softphone
+                window.Softphone = new Softphone(); 
+
+                // Registro de eventos para feedback no console
+    window.Softphone.eventEmitter.on('Register', (event) => console.log('Register event:', event));
+    window.Softphone.eventEmitter.on('Unregister', (event) => console.log('Unregister event:', event));
+    window.Softphone.eventEmitter.on('Calling', (event) => console.log('Calling event:', event));
+    window.Softphone.eventEmitter.on('Answer', (event) => console.log('Answer event:', event));
+    window.Softphone.eventEmitter.on('Hangup', (event) => console.log('Hangup event:', event));
+    window.Softphone.eventEmitter.on('Failure', (event) => console.log('Failure event:', event));
+    window.Softphone.eventEmitter.on('Pause', (event) => console.log('Pause event:', event));
+    window.Softphone.eventEmitter.on('Unpause', (event) => console.log('Unpause event:', event));
+    window.Softphone.eventEmitter.on('Status', (event) => console.log('Status event:', event));
+    window.Softphone.eventEmitter.on('Ready', (event) => console.log('Ready event:', event));
+    
+});
             });
         });
     });
-})();
 
-console.log('softphone.js loaded');
+class Softphone {
+    constructor() {
+        this.audioContext = null;
+        this.localStream = null;
+        this.sipClient = null;
+        this.currentSession = null;
+        this.registerer = null;
+        this.eventEmitter = new EventEmitter(); // Agora esta linha funcionará
+        this.paused = false; // Para controle de pausa
+    }
 
-document.addEventListener('DOMContentLoaded', () => {
-  let audioContext;
-  let localStream;
+    async initialize(sipUsername, sipPassword) {  
+        console.log('Initializing SIP Client with:', sipUsername, sipPassword);  
+        
+        try {  
+         this.localStream = await navigator.mediaDevices.getUserMedia({ audio: true });  
+        } catch (error) {  
+         console.error('Error accessing media devices.', error);  
+         return;  
+        }  
+        
+        this.sipClient = new SIP.UserAgent({  
+         uri: SIP.UserAgent.makeURI(`sip:${sipUsername}@fastdialer.fastquest.net`),  
+         transportOptions: {  
+          server: 'wss://fastdialer.fastquest.net:8089/ws'  
+         },  
+         authorizationUsername: sipUsername,  
+         authorizationPassword: sipPassword,  
+         sessionDescriptionHandlerFactoryOptions: {  
+          constraints: {  
+            audio: true,  
+            video: false  
+          }  
+         }  
+        });  
+        
+        this.sipClient.start().then(() => {  
+         console.log('SIP client started');  
+         this.registerer = new SIP.Registerer(this.sipClient);  
+         this.registerer.register(this.sipClient, {  
+          type: 'REGISTER',  
+          headers: { 'Authorization': 'Basic ' + btoa(`${sipUsername}:${sipPassword}`) },  
+          timeout: 30000,  
+          retry: 3  
+         }).then(() => {  
+          console.log('SIP client registered successfully');  
+         }).catch((error) => {  
+          console.error('Failed to register SIP client', error);  
+         });  
+        }).catch((error) => {  
+         console.error('Failed to start SIP client', error);  
+        });  
+      
+       
+      
+        this.sipClient.delegate = {
+            onRegistered: () => {
+                console.log('SIP client registered successfully');
+                this.eventEmitter.emit('Status', { state: 'registered' });
+            },
+            onUnregistered: () => {
+                console.log('SIP client unregistered');
+                this.eventEmitter.emit('Status', { state: 'unregistered' });
+            },
+            onInvite: (session) => {
+                console.log('Received invite');
+                this.handleIncomingCall(session);
+            },
+            onRegistrationFailed: (error) => {  
+                console.error('SIP client registration failed', error);  
+                this.eventEmitter.emit('Failure', error);  
+               }  
+             };
+    }
 
-  const form = document.getElementById('sip-credentials-form');
-  const loginDiv = document.getElementById('login');
-  const softphoneDiv = document.getElementById('softphone');
-  const statusDiv = document.getElementById('status');
-  const statusUnregisteredDiv = document.getElementById('status-unregistered');
-  const dialpad = document.getElementById('dialpad');
-  const sendButton = document.getElementById('send-button');
-  const hangupButton = document.getElementById('hangup-button');
-  const unregisterButton = document.getElementById('unregister-button');
-  const pauseButton = document.getElementById('pause-button');
-  const unpauseButton = document.getElementById('unpause-button');
-  const apiLoginForm = document.getElementById('api-login-form');
-  const apiLogoutButton = document.getElementById('api-logout-button');
-  const callingNumberSpan = document.getElementById('calling-number');
-  const callStatusSpan = document.getElementById('call-status');
-  let currentSession;
-
-  if (!form || !loginDiv || !softphoneDiv || !statusDiv || !statusUnregisteredDiv || !dialpad || !sendButton || !hangupButton || !unregisterButton) {
-      console.error('One or more elements not found in the DOM.');
-      return;
-  }
-
-  form.addEventListener('submit', async (event) => {
-      event.preventDefault();
-      const sipUsername = document.getElementById('sip-username').value;
-      const sipPassword = document.getElementById('sip-password').value;
-
-      try {
-          localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      } catch (error) {
-          console.error('Error accessing media devices.', error);
-          return;
-      }
-
-      const peerConnection = new RTCPeerConnection({
-          iceServers: [{ urls: 'stun:stun.l.google.com:19302' }],
-          iceCandidatePoolSize: 10
-      });
-
-      const sipClient = new SIP.UserAgent({
-          uri: SIP.UserAgent.makeURI(`sip:${sipUsername}@fastdialer.fastquest.net`),
-          transportOptions: {
-              server: 'wss://fastdialer.fastquest.net:8089/ws'
-          },
-          authorizationUsername: sipUsername,
-          authorizationPassword: sipPassword,
-          sessionDescriptionHandlerFactoryOptions: {
-              constraints: {
-                  audio: true,
-                  video: false
-              }
-          }
-      });
-
-      console.log('Initializing SIP client with:', {
-          uri: `sip:${sipUsername}@fastdialer.fastquest.net`,
-          server: 'wss://fastdialer.fastquest.net:8089/ws'
-      });
-
-      const registerer = new SIP.Registerer(sipClient);
-
-      sipClient.start().then(() => {
-          console.log('SIP client started');
-          return registerer.register();
-      }).then(() => {
-          console.log('Sending SIP registration request');
-      }).catch((error) => {
-          console.error('Failed to start SIP client', error);
-      });
-
-      sipClient.delegate = {
-          onRegistered: () => {
-              console.log('SIP client registered successfully');
-              statusDiv.style.display = 'block';
-              statusUnregisteredDiv.style.display = 'none';
-          },
-          onUnregistered: () => {
-              console.log('SIP client unregistered');
-              statusDiv.style.display = 'none';
-              statusUnregisteredDiv.style.display = 'block';
-          },
-          onInvite: (session) => {
-              console.log('Received invite');
-              handleIncomingCall(session);
-          },
-          onRegistrationFailed: (error) => {
-              console.error('SIP client registration failed', error);
-          }
-      };
-
-      dialpad.addEventListener('click', (event) => {
-          const number = event.target.value;
-          document.getElementById('number-input').value += number;
-      });
-
-      sendButton.addEventListener('click', () => {
-        const number = document.getElementById('number-input').value;
-        callingNumberSpan.textContent = number;
-        callStatusSpan.textContent = 'Calling...';
-        makeCall(number);
-    });
-
-      hangupButton.addEventListener('click', () => {
-          if (currentSession) {
-              hangupCall(currentSession);
-          }
-      });
-
-      unregisterButton.addEventListener('click', () => {
-          registerer.unregister().then(() => {
-              console.log('SIP client unregistered');
-              statusDiv.style.display = 'none';
-              statusUnregisteredDiv.style.display = 'block';
-          }).catch((error) => {
-              console.error('Failed to unregister SIP client', error);
-          });
-      });
-
-// Evento de login da API
-apiLoginForm.addEventListener('submit', (event) => {
-  event.preventDefault();
-  const apiUsername = document.getElementById('api-username').value;
-  const apiAltUsername = document.getElementById('api-alt-username').value;
-
-  fetch('https://fastdialer.fastquest.net/hsr/api/dialer/login', {
-      method: 'POST',
-      headers: {
-          'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-          user: apiUsername,
-          alt_user: apiAltUsername
-      })
-  })
-  .then(response => response.json())
-  .then(data => {
-      if (data.result === 'SUCCESS') {
-          console.log('API login successful:', data);
-          // Atualizar o status do usuário no frontend
-          statusDiv.style.display = 'block';
-          statusUnregisteredDiv.style.display = 'none';
-      } else {
-          console.error('API login failed:', data);
-      }
-  })
-  .catch((error) => {
-      console.error('Error during API login:', error);
-  });
-});
-
-// Evento de logout da API
-apiLogoutButton.addEventListener('click', () => {
-  const apiUsername = document.getElementById('api-username').value;
-
-  fetch('https://fastdialer.fastquest.net/hsr/api/dialer/logout', {
-      method: 'POST',
-      headers: {
-          'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-          user: apiUsername
-      })
-  })
-  .then(response => response.json())
-  .then(data => {
-      if (data.result === 'SUCCESS') {
-          console.log('API logout successful:', data);
-          // Atualizar o status do usuário no frontend
-          statusDiv.style.display = 'none';
-          statusUnregisteredDiv.style.display = 'block';
-      } else {
-          console.error('API logout failed:', data);
-      }
-  })
-  .catch((error) => {
-      console.error('Error during API logout:', error);
-  });
-});
-
-
-      // Set up pause button functionality
-      pauseButton.addEventListener('click', () => {
-          if (currentSession) {
-              pauseCall(currentSession, 'User requested pause');
-          }
-      });
-
-      // Set up unpause button functionality
-      unpauseButton.addEventListener('click', () => {
-          if (currentSession) {
-              unpauseCall(currentSession);
-          }
-      });
-
-      function makeCall(number) {
+    
+    makeCall(number) {
         const targetURI = SIP.UserAgent.makeURI(`sip:${number}@fastdialer.fastquest.net`);
         if (!targetURI) {
             console.error('Invalid target URI');
             return;
         }
-    
-        const inviter = new SIP.Inviter(sipClient, targetURI, {
+
+        const inviter = new SIP.Inviter(this.sipClient, targetURI, {
             sessionDescriptionHandlerOptions: {
                 constraints: { audio: true, video: false }
             }
         });
-    
+
         inviter.invite().then((session) => {
             console.log('Call started', session);
-            currentSession = session;
-            softphone.emit('Calling', { call_id: session.id, to: number });
-            callStatusSpan.textContent = 'In Call';
-            handleSession(session);
+            this.currentSession = session;
+            this.handleSession(session);
         }).catch((error) => {
             console.error('Failed to make call', error);
-            softphone.emit('Failure', error);
-            callStatusSpan.textContent = 'Call Failed';
         });
     }
-    function hangupCall(session) {
-      session.bye().then(() => {
-          console.log('Call ended');
-          currentSession = null;
-          softphone.emit('Hangup', { call_id: session.id });
-          callStatusSpan.textContent = 'Call Ended';
-      }).catch((error) => {
-          console.error('Failed to hang up call', error);
-          softphone.emit('Failure', error);
-          callStatusSpan.textContent = 'Hang Up Failed';
-      });
-  }
-  
-  // No recebimento de uma chamada
-  function handleIncomingCall(session) {
-      console.log('Handling incoming call', session);
-      session.accept({
-          sessionDescriptionHandlerOptions: {
-              constraints: { audio: true, video: false }
-          }
-      }).then(() => {
-          console.log('Call accepted', session);
-          currentSession = session;
-          softphone.emit('Answer', { call_id: session.id, from: session.remoteIdentity.uri.toString() });
-          callStatusSpan.textContent = 'In Call';
-          handleSession(session);
-      }).catch((error) => {
-          console.error('Failed to accept call', error);
-          softphone.emit('Failure', error);
-          callStatusSpan.textContent = 'Call Failed';
-      });
-  
-      session.on('bye', () => {
-          console.log('Call ended by remote');
-          currentSession = null;
-          softphone.emit('Hangup', { call_id: session.id });
-          callStatusSpan.textContent = 'Call Ended';
-      });
-  }
-  
 
-      function handleSession(session) {
-          console.log('Session:', session);
-          console.log('Session description handler:', session.sessionDescriptionHandler);
-          console.log('Peer connection:', session.sessionDescriptionHandler.peerConnection);
-          if (!session.sessionDescriptionHandler || !session.sessionDescriptionHandler.peerConnection) {
-              console.error('Session description handler or peer connection is undefined.');
-              return;
-          }
+    hangupCall() {
+        if (this.currentSession) {
+            this.currentSession.bye().then(() => {
+                console.log('Call ended');
+                this.eventEmitter.emit('Hangup', { call_id: this.currentSession.id });
+                this.currentSession = null;
+            }).catch((error) => {
+                console.error('Failed to hang up call', error);
+            });
+        }
+    }
 
-          const pc = session.sessionDescriptionHandler.peerConnection;
+    handleIncomingCall(session) {
+        session.accept({
+            sessionDescriptionHandlerOptions: {
+                constraints: { audio: true, video: false }
+            }
+        }).then(() => {
+            this.currentSession = session;
+            const callDetails = {
+                call_id: session.id,
+                from: session.remoteIdentity.uri.toString(),
+                to: session.localIdentity.uri.toString(),
+                campaign: 'IncomingCampaign',
+                anotation: 'IncomingCall',
+                call_filename: 'filename_of_the_call',
+                call_type: 'INCOMING'
+            };
+            this.emit('Answer', callDetails);
+            this.handleSession(session);
+        }).catch((error) => this.emit('Failure', error));
 
-          if (localStream) {
-              console.log('Adding local audio tracks to peer connection.');
-              localStream.getTracks().forEach(track => {
-                  pc.addTrack(track, localStream);
-              });
-          } else {
-              console.error('Local stream is not available.');
-          }
+        session.on('bye', () => {
+            this.emit('Hangup', { call_id: session.id });
+            this.currentSession = null;
+        });
+    }
 
-          pc.ontrack = (event) => {
-              console.log('Received audio stream', event.streams);
-              handleIncomingAudioStream(event.streams[0]);
-          };
+    handleSession(session) {
+        const pc = session.sessionDescriptionHandler.peerConnection;
 
-          pc.oniceconnectionstatechange = () => {
-              console.log('ICE Connection State changed to', pc.iceConnectionState);
-          };
+        pc.ontrack = (event) => this.handleIncomingAudioStream(event.streams[0]);
 
-          pc.onconnectionstatechange = () => {
-              console.log('Connection State changed to', pc.connectionState);
-          };
-      }
+        pc.oniceconnectionstatechange = () => {
+            this.eventEmitter.emit('Status', { state: pc.iceConnectionState });
+        };
+        pc.onconnectionstatechange = () => {
+            this.eventEmitter.emit('Status', { state: pc.connectionState });
+        };
+    }
 
-      function handleIncomingAudioStream(stream) {
-        console.log('Handling incoming audio stream:', stream);
+    handleIncomingAudioStream(stream) {
         const audioElement = document.createElement('audio');
         audioElement.srcObject = stream;
         audioElement.play().catch(error => {
-          console.error('Error playing audio stream', error);
+            console.error('Error playing audio stream:', error);
+            this.eventEmitter.emit('Failure', error);
         });
-      }
-      
-  });
+    }
+   
+}
+
+// Adicione um listener para o evento DOMContentLoaded
+document.addEventListener('DOMContentLoaded', () => {
+    // Exemplo de como usar a classe Softphone
+    document.getElementById('start-button').addEventListener('click', () => {
+        const sipUsername = document.getElementById('sip-username').value;
+        const sipPassword = document.getElementById('sip-password').value;
+
+        window.Softphone.initialize(sipUsername, sipPassword);
+    });
+
+    // Adicionando funcionalidade para o botão de chamada
+    document.getElementById('send-button').addEventListener('click', () => {
+        const number = document.getElementById('number-input').value;
+        window.Softphone.makeCall(number); // Corrigido para usar makeCall
+    });
+
+    // Adicionando funcionalidade para o botão de desligar
+    document.getElementById('hangup-button').addEventListener('click', () => {
+        window.Softphone.hangupCall(); // Corrigido para usar hangupCall
+    });
+
+    // Adicionando funcionalidade para o botão de registrar/desregistrar
+    document.getElementById('unregister-button').addEventListener('click', () => {
+        if (window.Softphone.registerer) {
+            window.Softphone.registerer.unregister().then(() => {
+                console.log('SIP client unregistered');
+                window.Softphone.eventEmitter.emit('Unregister'); // Corrigido para usar eventEmitter
+            }).catch((error) => {
+                console.error('Failed to unregister SIP client', error);
+            });
+        }
+    });
+
+    // Adicionando funcionalidade para o botão de pausa
+    document.getElementById('pause-button').addEventListener('click', () => {
+        window.Softphone.pause('User  requested pause');
+    });
+
+    // Adicionando funcionalidade para o botão de despausa
+    document.getElementById('unpause-button').addEventListener('click', () => {
+        window.Softphone.unpause();
+    });
+
 });
