@@ -169,7 +169,7 @@ public function addLeadWithAreaCode(Request $request, $base_list_name)
                 'list_changedate' => Carbon::now(),
                 'list_lastcalldate' => Carbon::now(),
                 'campaign_id' => null, // ou um valor válido se necessário
-                'list_description' => 'Descrição padrão', // ou um valor válido se necessário
+                'list_description' => $list_name, // ou um valor válido se necessário
                 'list_id' => $newListId, // Usar o novo list_id gerado
             ]);
         }
