@@ -56,22 +56,21 @@ class CampaignController extends Controller {
         ]);
     }
 
-     //CRIA UMA CAMPANHA BASE SEM PARAMETROS
-    //public function post(Request $request) {
-       // $validator = Validator::make($request->all(), [
-          //  'campaign_id' => 'required|string|min:2|max:20',
-          //  'campaign_name' => 'required|string|min:1|max:50',
-        //]);
 
-       // if ($validator->fails()) return response()->json($validator->errors(), 400);
-
-       // $campaign = Campaign::create($request->all());
-       // return response()->json($campaign, 201);
-    //}
-
-    public function get($campaign_id) {
-        $campaign = Campaign::find($campaign_id);
-        if (!$campaign) return response()->json(['error' => 'Campaign not found'], 404);
+    public function get($identifier) {
+        // Tenta encontrar a campanha pelo ID
+        $campaign = Campaign::find($identifier);
+    
+        // Se não encontrar pelo ID, tenta encontrar pelo nome
+        if (!$campaign) {
+            $campaign = Campaign::where('campaign_name', $identifier)->first();
+        }
+    
+        // Se ainda não encontrar, retorna erro
+        if (!$campaign) {
+            return response()->json(['error' => 'Campaign not found'], 404);
+        }
+    
         return response()->json($campaign);
     }
 
@@ -106,33 +105,49 @@ class CampaignController extends Controller {
     
 
 
-    public function put(Request $request, $campaign_id) {
-        $validator = Validator::make($request->all(), [
-            'campaign_name' => 'required|string|min:1|max:50'
-        ]);
-        
-        if ($validator->fails()) return response()->json($validator->errors(), 400);
-        
-        $campaign = Campaign::find($campaign_id);
-        if (!$campaign) return response()->json(['error' => 'Campaign not found'], 404);
+    public function put(Request $request, $identifier) {
+        // Tenta encontrar a campanha pelo ID (se for numérico) ou pelo nome
+        $campaign = null;
+        if (is_numeric($identifier)) {
+            $campaign = Campaign::find($identifier);
+        } else {
+            // Tenta encontrar a campanha pelo nome
+            $campaign = Campaign::where('campaign_name', $identifier)->first();
+        }
     
-        $input = $request->all();
-        $campaign->update($input);
+        // Se não encontrar, retorna erro
+        if (!$campaign) {
+            return response()->json(['error' => 'Campaign not found'], 404);
+        }
+    
+        // Atualiza a campanha com todos os dados do corpo da requisição
+        $campaign->update($request->all());
         
         return response()->json($campaign, 200);
     }
-    
-    
 
-    public function delete($campaign_id) {
-        $campaign = Campaign::find($campaign_id);
-        if (!$campaign) return response()->json(['error' => 'Campaign not found'], 404);
 
+    public function delete($identifier) {
+        // Tenta encontrar a campanha pelo ID (se for numérico) ou pelo nome
+        $campaign = null;
+        if (is_numeric($identifier)) {
+            $campaign = Campaign::find($identifier);
+        } else {
+            // Tenta encontrar a campanha pelo nome
+            $campaign = Campaign::where('campaign_name', $identifier)->first();
+        }
+    
+        // Se não encontrar, retorna erro
+        if (!$campaign) {
+            return response()->json(['error' => 'Campaign not found'], 404);
+        }
+    
+        // Remove a campanha
         $campaign->delete();
-        return response()->json('Campaign deleted', 204);
+    
+        // Retorna uma resposta de sucesso
+        return response()->json(['message' => 'Campaign deleted successfully'], 200);
     }
-
-
 
     public function addAgent(Request $request, $campaign_id) {
         $validator = Validator::make($request->all(), [

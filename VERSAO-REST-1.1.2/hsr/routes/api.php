@@ -16,6 +16,9 @@ use App\Http\Controllers\RecordingController;
 use App\Http\Controllers\DNCController;
 use App\Http\Controllers\HolidayController;
 use App\Http\Controllers\CallTimeController;
+use App\Http\Controllers\AsteriskController;
+
+use App\Http\Controllers\RecordingController_Beta;
 
 use App\Http\Controllers\Agent\DillerController;
 
@@ -78,11 +81,10 @@ Route::middleware('suport.bearer.token')->group(function () {
 Route::prefix('campaign')->group(function () {
             Route::controller(CampaignController::class)->group(function () {
             Route::get('/', 'index');
-            Route::post('/', 'post');
-            Route::get('/{id}', 'get');
-            Route::put('/{id}', 'put');
-            Route::delete('/{id}', 'delete');        
-
+            Route::get('/{identifier}', 'get');
+            Route::post('/', 'post');            
+            Route::put('/{identifier}', 'put');
+            Route::delete('/{identifier}', 'delete');
             Route::post('/addAgent/{id}', 'addAgent');   // Adicionar agente à campanha
             Route::post('/removeAgent/{id}', 'removeAgent'); // Remover agente da campanha
         });
@@ -95,7 +97,7 @@ Route::prefix('campaign')->group(function () {
             Route::get('/', 'index');
             Route::post('/', 'post');
             Route::get('/{user}', 'get');
-            Route::put('/{id}', 'put');
+            Route::put('/', 'put');
             Route::delete('/{id}', 'delete');
             Route::post('/createWithExtensionAndCampaign', 'createWithExtensionAndCampaign'); // CRIA AGENTE/RAMAL/VINCULA CAMPANHA
             
@@ -127,7 +129,8 @@ Route::prefix('campaign')->group(function () {
         Route::controller(LeadController::class)->group(function () {
             Route::get('/', 'index');
             Route::get('/{id}', 'show');
-            Route::post('/addLead', 'addLead'); // CRIA UM LEAD EM UMA LISTA DE CONTATOS
+            Route::post('/{list_name}', 'addLead'); // CRIA UM LEAD EM UMA LISTA DE CONTATOS
+            Route::post('/addLeadWithAreaCode/{list_name}', 'addLeadWithAreaCode'); // CRIA UM LEAD EM UMA LISTA DE CONTATOS
             Route::put('/{id}', 'update'); // Altere 'put' para 'update'
             Route::delete('/{id}', 'delete');
             Route::get('/list/search/{listId}', [LeadController::class, 'search']); // Pesquisa por leads em uma lista especifica 
@@ -150,11 +153,22 @@ Route::prefix('campaign')->group(function () {
         ]);
     });
     
-    Route::prefix('recordings')->group(function () {
-        Route::get('/', [RecordingController::class, 'listRecordings']); // Listar gravações
-        Route::get('/download/{filename}', [RecordingController::class, 'downloadRecording']); // Baixar gravação
-        Route::get('/play/{filename}', [RecordingController::class, 'playRecording']); // Reproduzir gravação
-        Route::get('/search', [RecordingController::class, 'searchRecordings' // Buscar gravações com filtros
+
+Route::prefix('recordings')->group(function () {
+    Route::get('/list', [RecordingController::class, 'listRecordings']);
+    Route::get('/download/{identifier}', [RecordingController::class, 'downloadRecording']);
+    Route::get('/play/{identifier}', [RecordingController::class, 'playRecording']);
+    Route::post('/search', [RecordingController::class, 'searchRecordings']);
+});
+
+    
+    
+    Route::prefix('recordingsBeta')->group(function () {       
+        Route::get('/recordingsBeta', [RecordingController_Beta::class, 'index']); // Define a rota para o método index
+        Route::get('/', [RecordingController_Beta::class, 'listRecordings']); // Listar gravações
+        Route::get('/download/{filename}', [RecordingController_Beta::class, 'downloadRecording']); // Baixar gravação
+        Route::get('/play/{filename}', [RecordingController_Beta::class, 'playRecording']); // Reproduzir gravação
+        Route::get('/search', [RecordingController_Beta::class, 'searchRecordings' // Buscar gravações com filtros
         ]); 
     });
     
@@ -184,7 +198,18 @@ Route::prefix('campaign')->group(function () {
         Route::delete('/{call_time_id}', [CallTimeController::class, 'destroy']); 
         Route::get('/show/{call_time_name}', [CallTimeController::class, 'show']); // Adiciona a rota para mostrar um call_time específico
         Route::get('/find', [CallTimeController::class, 'findByCallTimeName']); // Nova rota para encontrar call_time pelo nome
+        Route::post('/update-local-call-time', [CallTimeController::class, 'upsertCallTime']);
+        
     });
+
+    Route::prefix('asterisk')->group(function () {
+        Route::post('/register-sip', [AsteriskController::class, 'registerSip']);        
+        Route::post('/make-call', [AsteriskController::class, 'makeCall']);
+        Route::post('/hangup-call', [AsteriskController::class, 'hangupCall']);
+
+        
+    });
+    
 
     
     Route::middleware('auth:sanctum')->get('/token-test', function (Request $request) {
@@ -193,7 +218,15 @@ Route::prefix('campaign')->group(function () {
         
     });
     
+    Route::get('/softphone', function () { return view('softphone'); 
 
+        
+    
+    });
+
+    Route::get('/hsr/js/softphone.js', function () {  
+        return response()->file(public_path('js/softphone.js'));  
+     });
 
 //});
 
