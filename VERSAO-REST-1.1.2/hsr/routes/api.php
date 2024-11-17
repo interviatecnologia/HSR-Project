@@ -7,6 +7,7 @@ use App\Http\Controllers\AgentsController;
 use App\Http\Controllers\ExtensionController;
 use App\Http\Controllers\QueueController;
 use App\Http\Controllers\LeadController;
+use App\Http\Controllers\ListController;
 use App\Http\Controllers\AudioController;
 use App\Http\Controllers\HolidayScheduleController;
 use App\Http\Controllers\DialerController;
@@ -128,16 +129,29 @@ Route::prefix('campaign')->group(function () {
     Route::prefix('leads')->group(function () {
         Route::controller(LeadController::class)->group(function () {
             Route::get('/', 'index');
-            Route::get('/{id}', 'show');
+            Route::get('/{id}', 'get');
             Route::post('/{list_name}', 'addLead'); // CRIA UM LEAD EM UMA LISTA DE CONTATOS
             Route::post('/addLeadWithAreaCode/{list_name}', 'addLeadWithAreaCode'); // CRIA UM LEAD EM UMA LISTA DE CONTATOS
             Route::put('/{id}', 'update'); // Altere 'put' para 'update'
-            Route::delete('/{id}', 'delete');
+            Route::delete('/{identifier}', 'delete');
             Route::get('/list/search/{listId}', [LeadController::class, 'search']); // Pesquisa por leads em uma lista especifica 
             Route::get('list/lead-lists', [LeadController::class, 'listLeadLists']); // Pesquisa por Lista de leads 
             Route::put('/list/active', [LeadController::class, 'updateActiveStatus']);
         });
     });
+
+    Route::prefix('lists')->group(function () {
+        Route::controller(ListController::class)->group(function () {
+            Route::get('/', 'index');
+            Route::get('/{identifier}', 'get');
+            Route::post('/', 'post'); // CRIA UM LISTA DE CONTATOS            
+            Route::put('/{identifier}', 'put');          
+            Route::delete('/{identifier}', 'delete');         
+            
+            
+        });
+    });
+
 
   
     Route::prefix('reports')->group(function () {
