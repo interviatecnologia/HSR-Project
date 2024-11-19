@@ -52,30 +52,34 @@ Route::middleware('suport.bearer.token')->group(function () {
         Route::get('audio/{id}', [AudioController::class, 'get']);
     });
 });
-
-//Route::middleware('auth.api')->group(function () {
-    Route::prefix('dialer')->group(function () {
-        Route::controller(DialerController::class)->group(function () {
-            Route::get('/status/{user}', 'status'); // Verificar Status do Agente:
-            Route::get('/status', 'allStatus'); // Verificar Status de Todos os Agentes:
-            Route::post('/', 'store'); // Adicionar Agente:
-            Route::post('/connectAgentToConference', 'connectAgentToConference'); // Nova rota para realizar chamadas com conferencia
-            Route::post('/external-dial', 'externalDial'); // Nova rota para realizar chamadas
-            Route::post('/hangup-call', 'hangupCall'); // Nova rota para hangup de chamadas  
-            Route::put('/unpause/{user}', 'unpause'); // Despausar Agente            
-            Route::post('/login', 'login'); // Logout do Agente
-            Route::post('/logout', 'logout'); // Logout do Agente
-            Route::post('/UpdateExtensionAndCampaign', 'UpdateExtensionAndCampaign'); // VINCULA ou CRIA RAMAL + CAMPANHA
-            Route::put('/{user}', 'update'); // Atualizar Agente:
-            Route::put('/pause/{user}', 'pause'); // Pausar Agente:
-
-    
-        });
-
-    });
-
 //});
 
+
+//Route::middleware('auth.api:8')->group(function () {
+    
+Route::prefix('agents')->group(function () {
+    Route::controller(AgentsController::class)->group(function () {
+        Route::get('/', 'index');
+        Route::get('/{user}', 'get');
+        Route::post('/', 'post');        
+        Route::put('/{user}', 'put');
+        Route::delete('/{user}', 'delete');
+        Route::post('/createWithExtensionAndCampaign', 'createWithExtensionAndCampaign'); // CRIA AGENTE/RAMAL/VINCULA CAMPANHA
+        
+    });
+
+});
+
+Route::prefix('call-time')->group(function () { 
+    Route::get('/', [CallTimeController::class, 'index']); 
+    Route::get('/{call_time_id}', [CallTimeController::class, 'get']); // Nova rota para encontrar call_time pelo nome
+    Route::get('/{call_time_name}', [CallTimeController::class, 'show']); // Adiciona a rota para mostrar um call_time específico    
+    Route::post('/', [CallTimeController::class, 'store']); 
+    Route::put('/{call_time_id}', [CallTimeController::class, 'update']); 
+    Route::delete('/{call_time_id}', [CallTimeController::class, 'destroy']);     
+    Route::post('/update-local-call-time', [CallTimeController::class, 'upsertCallTime']);
+    
+});
 
 //Route::middleware('auth.api:8')->group(function () {
     
@@ -91,20 +95,41 @@ Route::prefix('campaign')->group(function () {
         });
     });
 
-//Route::middleware('auth.api:8')->group(function () {
-    
-    Route::prefix('agents')->group(function () {
-        Route::controller(AgentsController::class)->group(function () {
-            Route::get('/', 'index');
-            Route::post('/', 'post');
-            Route::get('/{user}', 'get');
-            Route::put('/', 'put');
-            Route::delete('/{id}', 'delete');
-            Route::post('/createWithExtensionAndCampaign', 'createWithExtensionAndCampaign'); // CRIA AGENTE/RAMAL/VINCULA CAMPANHA
+//Route::middleware('auth.api')->group(function () {
+    Route::prefix('dialer')->group(function () {
+        Route::controller(DialerController::class)->group(function () {
+            Route::get('/{user}', 'get'); // Verificar Status do Agente:
+            Route::get('/status', 'allStatus'); // Verificar Status de Todos os Agentes:
+            Route::delete('/{user}', 'delete'); // Logout do Agente  
+            Route::put('/pause/{user}', 'pause'); // Pausar Agente: 
+            Route::put('/unpause/{user}', 'unpause'); // Despausar Agente  
             
+            Route::post('/', 'store'); // Adicionar Agente:
+            Route::post('/connectAgentToConference', 'connectAgentToConference'); // Nova rota para realizar chamadas com conferencia
+            Route::post('/external-dial', 'externalDial'); // Nova rota para realizar chamadas
+            Route::post('/hangup-call', 'hangupCall'); // Nova rota para hangup de chamadas  
+                       
+            Route::post('/login', 'login'); // Logout do Agente
+            Route::post('/logout', 'logout'); // Logout do Agente
+            Route::post('/UpdateExtensionAndCampaign', 'UpdateExtensionAndCampaign'); // VINCULA ou CRIA RAMAL + CAMPANHA
+            Route::put('/{user}', 'update'); // Atualizar Agente:
+            
+
+    
         });
 
     });
+
+
+
+    Route::prefix('dnc')->group(function () {
+        Route::controller(DNCController::class)->group(function () {
+            Route::get('/', 'index'); // Listar todos os números na lista DNC
+            Route::post('/add', 'addNumber'); // Inserir número na lista DNC
+            Route::delete('/remove', 'removeNumber'); // Retirar número da lista DNC
+            Route::get('/check', 'checkNumber'); // Consultar número na lista DNC
+        });
+    });    
     
     Route::prefix('extensions')->group(function () {
         Route::controller(ExtensionController::class)->group(function () {
@@ -196,25 +221,7 @@ Route::prefix('recordings')->group(function () {
         });
     });
     
-    Route::prefix('dnc')->group(function () {
-        Route::controller(DNCController::class)->group(function () {
-            Route::get('/', 'index'); // Listar todos os números na lista DNC
-            Route::post('/add', 'addNumber'); // Inserir número na lista DNC
-            Route::delete('/remove', 'removeNumber'); // Retirar número da lista DNC
-            Route::get('/check', 'checkNumber'); // Consultar número na lista DNC
-        });
-    });    
-    
-    Route::prefix('call-time')->group(function () { 
-        Route::get('/', [CallTimeController::class, 'index']); 
-        Route::post('/', [CallTimeController::class, 'store']); 
-        Route::put('/{call_time_id}', [CallTimeController::class, 'update']); 
-        Route::delete('/{call_time_id}', [CallTimeController::class, 'destroy']); 
-        Route::get('/show/{call_time_name}', [CallTimeController::class, 'show']); // Adiciona a rota para mostrar um call_time específico
-        Route::get('/find', [CallTimeController::class, 'findByCallTimeName']); // Nova rota para encontrar call_time pelo nome
-        Route::post('/update-local-call-time', [CallTimeController::class, 'upsertCallTime']);
-        
-    });
+   
 
     Route::prefix('asterisk')->group(function () {
         Route::post('/register-sip', [AsteriskController::class, 'registerSip']);        

@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use App\Models\VicidialLiveAgent;
 use App\Models\VicidialUser;
 use App\Models\Campaign;
+use App\Models\VicidialCampaignAgents;
 use App\Models\InboundGroups;
 use App\Models\Phone;
 use App\Models\VicidialList;
@@ -52,7 +53,137 @@ class DialerController extends Controller
         return response()->json('Success', 200);
     }
 
+
     public function login(Request $request) {
+        // Validação dos dados de entrada
+        $validator = Validator::make($request->all(), [
+            'user' => 'required|string|min:2',
+            'campaign_name' => 'nullable|string|min:1', // Tornar campaign_name opcional
+            'alt_user' => 'nullable|string',
+            'lead_id' => 'nullable|string', // Adicione lead_id como opcional
+            'server_ip' => 'nullable|string', // Adicione server_ip como opcional
+        ]);
+        
+        if ($validator->fails()) {
+            return response()->json($validator->errors(), 400);
+        }
+    
+        $agent_user = $request->input('user');
+        $campaign_name = $request->input('campaign_name');
+    
+        // Defina um valor padrão para server_ip e lead_id
+        $server_ip = $request->input('server_ip') ?? '10.0.0.112'; // Valor padrão para o IP
+        $lead_id = $request->input('lead_id') ?? '0'; // Valor padrão para o lead_id
+    
+       // Verifica se o usuário existe
+        $user = VicidialUser::where('user', $agent_user)->first();
+        if (!$user) {
+        return response()->json(['result' => 'ERROR', 'result_reason' => 'User not found'], 404);
+        }
+        
+        // Se campaign_name não foi informado, vincula o usuário à campanha padrão
+        if (!$campaign_name) {
+            $campaign_name = 'MANUAL'; // Nome da campanha padrão
+            $campaign_id = 1000; // ID da campanha padrão
+    
+            // Vincula o usuário à campanha padrão
+            VicidialCampaignAgents::create([
+                'user' => $agent_user,
+                'campaign_id' => $campaign_id,
+            ]);
+        } else {
+            // Verifica se a campanha existe
+            $campaign = Campaign::where('campaign_name', $campaign_name)->first();
+            if (!$campaign) {
+                return response()->json(['result' => 'ERROR', 'result_reason' => 'Campaign not found'], 400);
+            }
+    
+            // Verifica se o usuário está associado à campanha
+            $userCampaign = VicidialCampaignAgents::where('user', $agent_user)
+                ->where('campaign_id', $campaign->campaign_id)
+                ->first();
+    
+            // Se o usuário não está associado à campanha, vincula-o
+            if (!$userCampaign) {
+                VicidialCampaignAgents::create([
+                    'user' => $agent_user,
+                    'campaign_id' => $campaign->campaign_id,
+                ]);
+            }
+        }
+    
+        // Verifica se o agente já está logado
+        $agent = VicidialLiveAgent::where('user', $agent_user)->first();
+        if ($agent) {
+            return response()->json([
+                'result' => 'SUCCESS',
+                'message' => 'User  already logged in',
+                'data' => [
+                    'extension' => $agent->extension,
+                    'pause_code' => $agent->pause_code,
+                ]
+            ], 200);
+        }
+    
+        // Se não está logado, verifica se tem ramal associado
+        $extension = $user->phone_login;
+        if (!$extension) {
+            // Se não tem ramal, tenta encontrar um disponível
+            $availablePhone = $this->findAvailableExtension();
+            if (!$availablePhone) {
+                return response()->json(['result' => 'ERROR', 'result_reason' => 'No available extension found'], 400);
+            }
+            $extension = $availablePhone->dialplan_number;
+        }
+    
+        // Realiza o login do agente
+        $newAgent = VicidialLiveAgent::create([
+            'user' => $agent_user,
+            'status' => 'LOGIN',
+            'extension' => 'SIP/' . $extension,
+            'campaign_id' => isset($campaign) ? $campaign->campaign_id : 1000, // Usar o ID da campanha padrão se não houver campanha
+            'server_ip' => $server_ip, // Inclua o server_ip aqui
+            'lead_id' => $lead_id, // Inclua o lead_id aqui
+            // Outros campos necessários, se houver
+        ]);
+    
+        // Atribuir sala de conferência ao agente
+        $conferenceId = $this->assignConference($newAgent);
+        if (!$conferenceId) {
+            return response()->json(['result' => 'ERROR', 'result_reason' => 'Failed to assign conference'], 500);
+        }
+    
+        // Atualiza a extensão do agente na tabela
+        $newAgent->conf_exten = $conferenceId;
+        $newAgent->save();
+    
+       
+        // Buscar a senha na tabela phones usando a extensão sem o prefixo SIP/
+        $phone = Phone::where('extension', $extension)->first(); // Altere 'extension' se necessário
+
+        if (!$phone) {
+        // Se não encontrar, você pode lidar com isso como preferir
+        return response()->json(['result' => 'ERROR', 'result_reason' => 'No phone associated with extension'], 404);
+        }
+
+    // A senha do ramal está na coluna 'pass' da tabela 'phones'
+    $conf_secret = $phone->conf_secret; // A senha do ramal
+
+    // Retornar a resposta JSON incluindo a senha do ramal
+    return response()->json([
+    'result' => 'SUCCESS',
+    'message' => 'Login successful',
+    'data' => [
+        'campaign_name' => $campaign->campaign_name,
+        'extension' =>  $extension, // Adicionando o prefixo SIP aqui
+        'conf_secret' => $conf_secret, // Senha do ramal
+        'pause_code' => $newAgent->pause_code,
+        'conference_id' => $conferenceId,
+        ]
+    ], 200);
+
+    }
+    public function login2(Request $request) {
         // Validação dos dados de entrada
         $validator = Validator::make($request->all(), [
             'user' => 'required|string|min:2',
@@ -155,124 +286,123 @@ class DialerController extends Controller
             ], 200);
         }
     }
-    public function logout(Request $request) {
-        // Validação dos dados de entrada
-        $validator = Validator::make($request->all(), [
-            'user' => 'required|string|min:2',
-            'alt_user' => 'nullable|string',
-        ]);
-        
-        if ($validator->fails()) {
-            return response()->json($validator->errors(), 400);
-        }
+    public function delete($user)  // Função de logout
+{  
+   // Validação dos dados de entrada  
+   $validator = Validator::make(['user' => $user], [  
+      'user' => 'required|string|min:2',  
+   ]);  
     
-        $agent_user = $request->input('user');
-        $alt_user = $request->input('alt_user');
+   if ($validator->fails()) {  
+      return response()->json($validator->errors(), 400);  
+   }  
     
-        // Verificação se o usuário tem permissão para logout
-        if (strlen($agent_user) < 1 && strlen($alt_user) < 2) {
-            return response()->json([
-                'result' => 'ERROR',
-                'result_reason' => 'logout not valid'
-            ], 400);
-        }
+   $agent_user = $user;  
     
-        if (strlen($alt_user) > 1) {
-            $user = VicidialUser ::where('custom_three', $alt_user)->first();
-            if ($user) {
-                $agent_user = $user->user;
-            } else {
-                return response()->json([
-                    'result' => 'ERROR',
-                    'result_reason' => 'no user found'
-                ], 404);
-            }
-        }
-            
-        // Verifica se o agente está logado
-        $agent = VicidialLiveAgent::where('user', $agent_user)->first();
-        if ($agent) {
-            // Desconectar o agente da conferência
-            if ($agent->conf_exten) {
-                $this->disconnectAgentFromConference($agent_user); // Chama a função para desconectar
-            }
+   // Verificação se o usuário tem permissão para logout  
+   if (strlen($agent_user) < 1) {  
+      return response()->json([  
+        'result' => 'ERROR',  
+        'result_reason' => 'logout not valid'  
+      ], 400);  
+   }  
     
-            // Remover a extensão do agente da tabela conferências
-            $agent->conf_exten = ''; // Ou use '' se preferir
+   // Verifica se o agente está logado  
+   $agent = VicidialLiveAgent::where('user', $agent_user)->first();  
+   if ($agent) {  
+      // Desconectar o agente da conferência  
+      if ($agent->conf_exten) {  
+        $this->disconnectAgentFromConference($agent_user); // Chama a função para desconectar  
+      }  
     
-            // Salvar as alterações na tabela vicidial_live_agents
-            $agent->save();
+      // Remover a extensão do agente da tabela conferências  
+      $agent->conf_exten = ''; // Ou use '' se preferir  
     
-            // Remove o registro do agente da tabela vicidial_live_agents
-            $agent->delete();
+      // Salvar as alterações na tabela vicidial_live_agents  
+      $agent->save();  
     
-            return response()->json([
-                'result' => 'SUCCESS',
-                'result_reason' => 'logout function set',
-                'agent_user' => $agent_user
-            ], 200);
-        } else {
-            return response()->json([
-                'result' => 'ERROR',
-                'result_reason' => 'agent_user is not logged in'
-            ], 400);
-        }
-    }
-    public function pause($user) {
-        $agent = VicidialLiveAgent::find($user);
-        if (!$agent) return response()->json('Not found', 404);
+      // Remove o registro do agente da tabela vicidial_live_agents  
+      $agent->delete();  
+    
+      return response()->json([  
+        'result' => 'SUCCESS',  
+        'result_reason' => 'logout function set',  
+        'agent_user' => $agent_user  
+      ], 200);  
+   } else {  
+      return response()->json([  
+        'result' => 'ERROR',  
+        'result_reason' => 'agent_user is not logged in'  
+      ], 400);  
+   }  
+}
+public function pause($user)  
+{  
+   $agent = VicidialLiveAgent::where('user', $user)->first();  
+   if (!$agent) return response()->json('Not found', 404);  
+  
+   // Depois, encontrar o ID correspondente no VicidialUser  
+   $userInfo = VicidialUser::where('user', $user)->first();  
+   if (!$userInfo) return response()->json('User not found in VicidialUser', 404);  
+  
+   // Validar se o código de pausa é válido  
+   $pauseCodeName = request()->input('pause_code_name');  
+   $pauseCodeInfo = DB::table('vicidial_pause_codes')  
+      ->where('pause_code_name', $pauseCodeName)  
+      ->first();  
+   if (!$pauseCodeInfo) return response()->json('Invalid pause code', 400);  
+  
+   // Atualizar o agente com o status de pausa  
+   $agent->update([  
+      'status' => 'PAUSED',  
+      'pause_code' => $pauseCodeInfo->pause_code,  
+      'last_update_time' => now() // Atualiza o tempo da última modificação  
+   ]);  
+  
+   return response()->json([  
+      'Açao' => 'Agent paused',  
+      'live_agent_id' => $agent->live_agent_id,  
+      'user_id' => $userInfo->user_id, // Inclui o ID do usuário do VicidialUser  
+      'user' => $userInfo->user, // Utiliza o campo 'user' do VicidialUser  
+      'full_name' => $userInfo->full_name, // Obtém o nome completo do usuário  
+      'status' => $agent->status,  
+      'extension' => $agent->extension,  
+      'campaign_id' => $agent->campaign_id,  
+      'pause_code' => $agent->pause_code,  
+      'pause_code_name' => $pauseCodeInfo->pause_code_name, // Inclui o nome do código de pausa  
+   ], 200);  
+}
 
-        // Depois, encontrar o ID correspondente no VicidialUser
-        $userInfo = VicidialUser::where('user', $user)->first();
-        if (!$userInfo) return response()->json('User not found in VicidialUser', 404);
-    
-        // Atualizar o agente com o status de pausa
-        $agent->update([
-            'status' => 'PAUSED',
-            'last_update_time' => now() // Atualiza o tempo da última modificação
-        ]);
-    
-        return response()->json([
-            'Açao' => 'Agent paused',
-            'live_agent_id' => $agent->live_agent_id,
-            'user_id' => $userInfo->user_id, // Inclui o ID do usuário do VicidialUser
-            'user' => $userInfo->user, // Utiliza o campo 'user' do VicidialUser
-            'full_name' => $userInfo->full_name, // Obtém o nome completo do usuário
-            'status' => $agent->status,
-            'extension' => $agent->extension,
-            'campaign_id' => $agent->campaign_id,
-            'pause_code' => $agent->pause_code,
-        ], 200);
-    }
+public function unpause($user)  
+{  
+   $agent = VicidialLiveAgent::where('user', $user)->first();  
+   if (!$agent) return response()->json('Not found', 404);  
+  
+   // Depois, encontrar o ID correspondente no VicidialUser  
+   $userInfo = VicidialUser::where('user', $user)->first();  
+   if (!$userInfo) return response()->json('User not found in VicidialUser', 404);  
+  
+   // Atualizar o agente com o status de não pausa  
+   $agent->update([  
+      'status' => 'READY',  
+      'pause_code' => '',  
+      'last_update_time' => now() // Atualiza o tempo da última modificação  
+   ]);  
+  
+   return response()->json([  
+      'Açao' => 'Agent unpaused',  
+      'live_agent_id' => $agent->live_agent_id,  
+      'user_id' => $userInfo->user_id, // Inclui o ID do usuário do VicidialUser  
+      'user' => $userInfo->user, // Utiliza o campo 'user' do VicidialUser  
+      'full_name' => $userInfo->full_name, // Obtém o nome completo do usuário  
+      'status' => $agent->status,  
+      'extension' => $agent->extension,  
+      'campaign_id' => $agent->campaign_id,  
+   ], 200);  
+}
 
-    public function unpause($user) {
-        $agent = VicidialLiveAgent::find($user);
-        if (!$agent) return response()->json('Not found', 404);
-    
-        // Encontrar o ID correspondente no VicidialUser
-        $userInfo = VicidialUser::where('user', $user)->first();
-        if (!$userInfo) return response()->json('User not found in VicidialUser', 404);
-    
-        // Atualizar o agente com o status de ativo
-        $agent->update([
-            'status' => 'READY',
-            'last_update_time' => now() // Atualiza o tempo da última modificação
-        ]);
-    
-        return response()->json([
-            'Ação' => 'Agent unpaused',
-            'live_agent_id' => $agent->live_agent_id,
-            'user_id' => $userInfo->id, // Inclui o ID do usuário do VicidialUser
-            'user' => $userInfo->user, // Utiliza o campo 'user' do VicidialUser
-            'full_name' => $userInfo->full_name, // Obtém o nome completo do usuário
-            'status' => $agent->status,
-            'extension' => $agent->extension,
-            'campaign_id' => $agent->campaign_id,
-            'pause_code' => $agent->pause_code
-        ], 200);
-    }
 
-    public function status($user)
+    public function get($user)
 {
     // Encontrar o ID correspondente no VicidialUser 
     $userInfo = VicidialUser ::where('user', $user)->first();
@@ -290,6 +420,12 @@ class DialerController extends Controller
     } else {  
         $extension = '';  
     }  
+    
+    // Buscar o status do ramal na tabela phones  
+    $peerStatus = DB::table('phones')  
+   ->where('dialplan_number', str_replace('SIP/', '', $extension))  
+   ->first();
+        
     
     // Definir status inicial como desconectado
     $agentStatus = 'DISCONNECTED';
@@ -323,7 +459,7 @@ class DialerController extends Controller
             'conf_exten' => $agent ? $agent->conf_exten : null,
             'campaign_id' => $agent->$campaignId ?? null,
             'pause_code' => $pauseCode,
-            'peer_status' => $peer_status ?? 'UNKNOWN',   // Status desconhecido se não houver campanha$sipStatus, // Status desconhecido se não houver campanha
+            'peer_status' => $peerStatus->peer_status ?? 'UnKnown', // Status desconhecido se não houver campanha$sipStatus, // Status desconhecido se não houver campanha
             'message' => 'Campanha não atribuída' // Mensagem personalizada
         ], 400);
     }
@@ -342,7 +478,7 @@ class DialerController extends Controller
             'conf_exten' => $agent ? $agent->conf_exten : null,
             'campaign_id' => $agent->$campaignId ?? null,
             'pause_code' => $pauseCode,
-            'peer_status' => $peer_status ?? 'UNKNOWN',   // Status desconhecido se não houver campanha$sipStatus, // Status desconhecido se não houver campanha
+            'peer_status' => $peerStatus->peer_status ?? 'UnKnown',   // Status desconhecido se não houver campanha$sipStatus, // Status desconhecido se não houver campanha
             'message' => 'Ramal não atribuída' // Mensagem personalizada
         ], 400);
     }
@@ -350,6 +486,7 @@ class DialerController extends Controller
     // Encontrar o ID correspondente no Phone para obter o Sip Status
     $phoneInfo = Phone::where('dialplan_number', $extension)->first();
     if (!$phoneInfo) {
+        
         return response()->json([
             'status' => $agentStatus,
             'user_id' => $userInfo->user_id,
@@ -362,60 +499,46 @@ class DialerController extends Controller
             'conf_exten' => $agent->conf_exten,
             'campaign_id' => $agent->campaign_id,
             'pause_code' => $pauseCode,            
-            'peer_status' => $peer_status ?? 'UNKNOWN', // Se o telefone não for encontrado, status SIP é desconhecido
-            'message' => 'Phone not found'
-        ], 404);
+            'peer_status' => $peerStatus->peer_status ?? 'UnKnown', // Se o telefone não for encontrado, status SIP é desconhecido
+            
+        ], 200);
     }
 
-    // Determinar o status do SIP
-    $sipStatus = $phoneInfo->peer_status;
-    switch ($sipStatus) {
-        case 'REGISTERED':
-            $status = 'REGISTERED';
-            break;
-        case 'UNREGISTERED':
-            $status = 'UNREGISTERED';
-            break;
-        case 'REACHABLE':
-            $status = 'REACHABLE';
-            break;
-        case 'UNREACHABLE':
-            $status = 'UNREACHABLE';
-            break;
-        case 'LAGGED':
-            $status = 'LAGGED';
-            break;
-        default:
-            $status = 'UNKNOWN';
-            break;
-    }
-
-    return response()->json([
-        'status' => $agentStatus,
-        'user_id' => $userInfo->user_id,
-        'user' => $userInfo->user,
-        'full_name' => $userInfo->full_name,
-        'extension' => $agent && $agent->extension ? $agent->extension : $phoneLogin,
-        'conf_secret' => $agent && $agent->conf_secret ? $agent->conf_secret
-        : null, // Ou use um valor padrão
-        'phone_login' => $phoneLogin,
-        'phone_pass' => $userInfo->phone_pass,
-        'conf_exten' => $agent ? $agent->conf_exten : null,
-        'campaign_id' => $agent->campaign_id,
-        'pause_code' => $pauseCode,
-        'peer_status' => $status,
-        'message' => 'OK'
-
-    ]);
+    
+    return response()->json([  
+   'status' => $agentStatus,  
+   'user_id' => $userInfo->user_id,  
+   'user' => $userInfo->user,  
+   'full_name' => $userInfo->full_name,  
+   'extension' => $agent && $agent->extension ? $agent->extension : $phoneLogin,  
+   'conf_secret' => $agent && $agent->conf_secret ? $agent->conf_secret  
+   : null, // Ou use um valor padrão  
+   'phone_login' => $phoneLogin,  
+   'phone_pass' => $userInfo->phone_pass,  
+   'conf_exten' => $agent ? $agent->conf_exten : null,  
+   'campaign_id' => $agent->campaign_id,  
+   'pause_code' => $pauseCode,  
+   'peer_status' => $peerStatus->peer_status ?? 'UnKnown',// Se o telefone não for encontrado, status SIP é desconhecido
+   'message' => 'OK'  
+]);
 
     }
        
 
-public function allStatus()
-{
-    $agents = VicidialLiveAgent::all();
-    return response()->json($agents);
-}
+    public function allStatus()
+    {
+        $agents = VicidialLiveAgent::all();
+        
+        // Depuração: Log do conteúdo de $agents
+        \Log::info($agents);
+    
+        if ($agents->isEmpty()) {
+            return response()->json(['message' => 'No agents active found']);
+        }
+    
+        return response()->json($agents);
+    }
+    
 
 
 
@@ -947,8 +1070,32 @@ private function executeHangup($params)
             'reason' => $e->getMessage()
         ];
     }
+
+
 }
 
-
-
+private function findAvailableExtension()  
+{  
+   // Procurar um ramal que atenda aos parâmetros específicos  
+   $phone = Phone::where('dialplan_number', '>', '8300')  
+            ->where(function ($query) {  
+               $query->where('peer_status', 'UNREGISTERED')  
+                   ->orWhere('peer_status', 'UNKNOWN'); // Adiciona a condição UNKNOWN  
+            })  
+            ->where('phone_ip', '') // Verifica se o campo phone_ip está vazio  
+            ->where('computer_ip', '') // Verifica se o campo computer_ip está vazio  
+            ->whereNotIn('dialplan_number', DB::table('vicidial_live_agents')  
+               ->where('extension', 'like', 'SIP/%') // Desconsidera o prefixo SIP/  
+               ->pluck('extension')  
+            )  
+            ->first();  
+  
+   if ($phone) {  
+      // Se encontrou um ramal disponível, retorna o ramal  
+      return $phone;  
+   }  
+  
+   // Se não encontrou, retorna null  
+   return null;  
+}
 }

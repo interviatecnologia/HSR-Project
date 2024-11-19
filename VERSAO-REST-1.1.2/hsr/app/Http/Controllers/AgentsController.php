@@ -16,8 +16,8 @@ class AgentsController extends Controller {
         'pass' => 'required|string|min:1|max:20',
         'user_level' => 'required|integer|min:1|max:9',
         'full_name' => 'required|string|min:1|max:50',
-        'user_group' => 'required|string|min:1|max:20',
-        'campaign_id' => 'required|string|min:1|max:20' // Adiciona campanha ao criar
+        'user_group' => 'nullable|string|min:1|max:20',
+        'campaign_id' => 'nullable|string|min:1|max:20' // Adiciona campanha ao criar
     ];
 
     public function index(Request $request) {
@@ -46,10 +46,8 @@ class AgentsController extends Controller {
             if ($fullResponse) {
                 return $user;
             } else {
-                return [
-                    'user_id' => $user->user_id, // Acesse o id diretamente do objeto $user
-                    'user' => $user->user,
-                    'pass' => $user->pass,
+                return [                    
+                    'user' => $user->user,                    
                     'full_name' => $user->full_name
                 ];
             }
@@ -64,6 +62,27 @@ class AgentsController extends Controller {
         ]);
     }
 
+    public function get(string $name) {
+        // Busca o usuário pelo nome
+        $user = VicidialUser ::where('user', $name)->first();
+        if (!$user) {
+            return response()->json('Not found', 404);
+        }
+    
+        // Converte o objeto em um array
+        $userArray = $user->toArray();
+    
+        // Lista de campos a serem bloqueados
+        $blockedFields = ['pass', 'phone_pass']; // Adicione outros campos que você deseja bloquear
+    
+        // Remove os campos bloqueados
+        foreach ($blockedFields as $field) {
+            unset($userArray[$field]);
+        }
+    
+        // Retorna a resposta JSON com os campos permitidos
+        return response()->json($userArray);
+    }
     public function post(Request $request) {
         $validator = Validator::make($request->all(), self::$validatorFields);
         if ($validator->fails()) return response()->json($validator->errors(), 400);
@@ -71,26 +90,49 @@ class AgentsController extends Controller {
         return response()->json($user, 201);
     }
 
-    public function get(string $user) {
-        $user = VicidialUser::find($user);
-        if (!$user) return response()->json('Not found', 404);
-        return response()->json($user);
-    }
+    
 
-    public function put(Request $request, string $id) {
-        $validator = Validator::make($request->all(), self::$validatorFields);
-        if ($validator->fails()) return response()->json($validator->errors(), 400);
-        $user = VicidialUser::find($id);
-        if (!$user) return response()->json('Not found', 404);
-        $user->update($request->only(array_keys(self::$validatorFields)));
+    public function put(Request $request, string $userName) {
+        // Define as regras de validação
+        $rules = self::$validatorFields;
+    
+        // Se o método for PUT, torne os campos específicos não obrigatórios
+        if ($request->isMethod('put')) {
+            $rules['user'] = 'nullable'; // Torna o campo 'user' não obrigatório
+            $rules['pass'] = 'nullable'; // Torna o campo 'pass' não obrigatório
+            $rules['user_level'] = 'nullable'; // Torna o campo 'user_level' não obrigatório
+        }
+    
+        // Valida os dados do request
+        $validator = Validator::make($request->all(), $rules);
+        if ($validator->fails()) {
+            return response()->json($validator->errors(), 400);
+        }
+    
+        // Busca o usuário pelo nome
+        $user = VicidialUser ::where('user', $userName)->first();
+        if (!$user) {
+            return response()->json('Not found', 404);
+        }
+    
+        // Atualiza o usuário com os dados do request
+        $user->update($request->only(array_keys($rules)));
+    
         return response()->json('Success', 200);
     }
 
-    public function delete(string $id) {
-        $user = VicidialUser::find($id);
-        if (!$user) return response()->json('Not found', 404);
+    public function delete(string $userName) {
+        // Busca o usuário pelo nome
+        $user = VicidialUser ::where('user', $userName)->first();
+        if (!$user) {
+            return response()->json('Not found', 404);
+        }
+    
+        // Deleta o usuário
         $user->delete();
-        return response()->json([], 204);
+    
+        // Retorna uma resposta de sucesso com a mensagem desejada
+        return response()->json(['message' => 'Success, user deleted'], 200);
     }
 
 
